@@ -1,0 +1,42 @@
+{
+    "Understanding the Role": {
+        "Let's begin with the basics. What's the job title you're hiring for?": "",
+        "Thanks! And is this position full-time, part-time, or contract?": "",
+        "Which department will this role be in?": "",
+        "Got it. And who will this person report to?": "",
+        "Well. Where is this position based at?": ""
+    },
+    "Responsibilities and Duties": {
+        "Now, let's talk about the key responsibilities. Can you describe the main duties this person will handle?": "",
+        "Great! Any specific technologies or platforms they'll need to work with?": "",
+        "Got it! Would you like to add any additional tasks or responsibilities?": "",
+        "Great! Are there any long term goals for this position?": "",
+        "Got it! What is the immediate challenge that a new hire would face in this position?": "",
+        "Great! What is that defining success in this role?": "",
+        "How does this role contribute to the company's larger strategic goals or vision?": "",
+        "How often will this person need to work with teams outside of engineering, like marketing, sales, or customer success?": "",
+        "What opportunities for learning and growth does this role offer? Are there any skills you expect them to develop?": "",
+        "Who are the key stakeholders this person will regularly interact with outside the immediate team?": ""
+    },
+    "Required Skills and Qualifications": {
+        "Let's cover the skills and qualifications next. What's the minimum level of experience required for this role?": "",
+        "Great! Any specific educational background or certifications needed?": "",
+        "And are there any must-have technical skills or soft skills?": "",
+        "What type of working style thrives in this role—do you prefer people who are more independent or team-oriented?": "",
+        "How would you describe your management style? What kind of guidance or mentorship can the new hire expect?": ""
+    },
+    "Preferred Qualifications": {
+        "Are there any additional qualifications or skills that would be a bonus?": "",
+        "Is there any preferred candidate background that would fit the role best?": ""
+    },
+    "Compensation and Benefits": {
+        "Would you like to include salary details or any benefits for this role?": ""
+    },
+    "Company Overview and Culture": {
+        "To help candidates understand more about your company, could you provide a brief overview of your organization?": "",
+        "And what's the work culture like on the team?": ""
+    },
+    "Work Mode": {
+        "Can you talk about the work mode?": ""
+    }
+}

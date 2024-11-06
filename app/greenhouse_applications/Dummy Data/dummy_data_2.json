@@ -1,0 +1,273 @@
+{
+  "action": "new_candidate_application",
+  "payload": {
+    "application": {
+      "id": 71980813,
+      "rejected_at": null,
+      "prospect": false,
+      "status": "active",
+      "applied_at": "2023-10-30T10:15:30Z",
+      "last_activity_at": "2023-10-30T10:15:29Z",
+      "url": "http://app.greenhouse.io/people/60304595?application_id=71980813",
+      "source": {
+        "id": 17,
+        "name": "Company Website"
+      },
+      "credited_to": {
+        "id": 92122,
+        "email": "hr@example.com",
+        "name": "HR Admin",
+        "employee_id": "124XYZ"
+      },
+      "rejection_reason": null,
+      "rejection_details": null,
+      "current_stage": {
+        "id": 2944103,
+        "name": "Technical Interview",
+        "interviews": [
+          {
+            "id": 4368005,
+            "name": "Technical Screening",
+            "status": "scheduled",
+            "interview_kit": {
+              "url": "http://app.greenhouse.io/guides/4368143/people/60304595?application_id=71980813",
+              "content": "<p>Instructions for the technical interview.</p>",
+              "questions": [
+                {
+                  "id": 3136354,
+                  "question": "What programming languages are you proficient in?"
+                },
+                {
+                  "id": 3136355,
+                  "question": "Describe a challenging project you've worked on."
+                }
+              ]
+            },
+            "interviewers": []
+          }
+        ]
+      },
+      "prospect_detail": {
+        "prospect_pool": null,
+        "prospect_stage": null,
+        "prospect_owner": null
+      },
+      "custom_fields": {
+        "application_custom_test": {
+          "name": "Application Custom Test",
+          "type": "single_select",
+          "value": null
+        },
+        "custom_boolean_test": {
+          "name": "Custom Boolean Test",
+          "type": "boolean",
+          "value": null
+        }
+      },
+      "candidate": {
+        "id": 60304595,
+        "first_name": "John",
+        "last_name": "Doe",
+        "title": "Software Engineer",
+        "company": "Tech Solutions Inc.",
+        "created_at": "2023-10-30T10:15:29Z",
+        "external_id": null,
+        "photo_url": null,
+        "url": "http://app.greenhouse.io/people/60304595",
+        "is_private": false,
+        "can_email": true,
+        "phone_numbers": [
+          {
+            "value": "555-123-4567",
+            "type": "mobile"
+          }
+        ],
+        "email_addresses": [
+          {
+            "value": "john.doe@techsolutions.com",
+            "type": "work"
+          },
+          {
+            "value": "johnny.doe@gmail.com",
+            "type": "personal"
+          }
+        ],
+        "addresses": [
+          {
+            "value": "456 Sample Lane\nSan Francisco, CA 94101",
+            "type": "home"
+          }
+        ],
+        "website_addresses": [
+          {
+            "value": "johnswebsite.com",
+            "type": "personal"
+          }
+        ],
+        "social_media_addresses": [
+          {
+            "value": "linkedin.com/in/johndoe"
+          }
+        ],
+        "educations": [
+          {
+            "school_name": "Massachusetts Institute of Technology",
+            "degree": "Master's Degree",
+            "discipline": "Artificial Intelligence",
+            "start_date": "09/01/2015",
+            "end_date": "05/15/2017"
+          }
+        ],
+        "employments": [],
+        "recruiter": {
+          "id": 92123,
+          "email": "recruiter@example.com",
+          "name": "Alice Johnson",
+          "employee_id": "124XYZ"
+        },
+        "coordinator": {
+          "id": 92428,
+          "email": "coordinator@example.com",
+          "name": "David Brown",
+          "employee_id": "789GHI"
+        },
+        "attachments": [
+          {
+            "filename": "John Cover Letter.docx",
+            "url": "https://prod-heroku.s3.amazonaws.com/...",
+            "type": "cover_letter"
+          },
+          {
+            "filename": "John Resume.docx",
+            "url": "https://prod-heroku.s3.amazonaws.com/...",
+            "type": "resume"
+          }
+        ],
+        "tags": [
+          "Python",
+          "Machine Learning"
+        ],
+        "custom_fields": {
+          "date_test": {
+            "name": "Date Test",
+            "type": "date",
+            "value": ""
+          },
+          "desired_salary": {
+            "name": "Desired Salary",
+            "type": "short_text",
+            "value": null
+          },
+          "graduation_year_1": {
+            "name": "Graduation Year",
+            "type": "single_select",
+            "value": null
+          },
+          "work_remotely": {
+            "name": "Work Remotely",
+            "type": "boolean",
+            "value": null
+          }
+        }
+      },
+      "jobs": [
+        {
+          "id": 274076,
+          "name": "Machine Learning Engineer",
+          "requisition_id": "XYZ",
+          "notes": null,
+          "confidential": false,
+          "job_post_id": 263534,
+          "status": "open",
+          "created_by_id": 273556,
+          "created_at": "2023-10-01T09:00:00Z",
+          "opened_at": "2023-10-01T09:00:00Z",
+          "closed_at": null,
+          "url": "http://app.greenhouse.io/sdash/274076",
+          "departments": [
+            {
+              "id": 8718,
+              "name": "AI Department",
+              "external_id": "ex-dept-2"
+            }
+          ],
+          "offices": [
+            {
+              "id": 16479,
+              "name": "New York",
+              "location": "New York, United States",
+              "external_id": "ex-office-2"
+            }
+          ],
+          "hiring_team": {
+            "hiring_managers": [
+              {
+                "user_id": 92914,
+                "employee_id": "124XYZ"
+              }
+            ],
+            "sourcers": [
+              {
+                "user_id": 92428,
+                "employee_id": null
+              }
+            ],
+            "recruiters": [
+              {
+                "user_id": 92428,
+                "employee_id": null
+              }
+            ],
+            "coordinators": [
+              {
+                "user_id": 92428,
+                "employee_id": "789GHI"
+              }
+            ]
+          },
+          "custom_fields": {
+            "date_test": {
+              "name": "Date Test",
+              "type": "date",
+              "value": "2023-10-30"
+            },
+            "employment_type": {
+              "name": "Employment",
+              "type": "single_select",
+              "value": "Full-time"
+            },
+            "replacement_role_": {
+              "name": "Replacement Role",
+              "type": "boolean",
+              "value": false
+            },
+            "salary_range_2": {
+              "name": "Salary Range",
+              "type": "currency_range",
+              "value": {
+                "unit": null,
+                "min_value": "80000.0",
+                "max_value": "120000.0"
+              }
+            },
+            "test_field_1": {
+              "name": "Test Short Text Field",
+              "type": "short_text",
+              "value": "test data"
+            },
+            "test_user_field": {
+              "name": "Test User Field",
+              "type": "user",
+              "value": {
+                "user_id": 117731,
+                "name": "Hiring Admin",
+                "email": "hiringadmin@example.com",
+                "employee_id": "user-def"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

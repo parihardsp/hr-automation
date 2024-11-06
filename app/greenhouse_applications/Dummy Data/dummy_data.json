@@ -1,0 +1,273 @@
+{
+  "action": "new_candidate_application",
+  "payload": {
+    "application": {
+      "id": 71980812,
+      "rejected_at": null,
+      "prospect": false,
+      "status": "active",
+      "applied_at": "2017-10-27T14:44:43Z",
+      "last_activity_at": "2017-10-27T14:44:42Z",
+      "url": "http://app.greenhouse.io/people/60304594?application_id=71980812",
+      "source": {
+        "id": 16,
+        "name": "LinkedIn (Prospecting)"
+      },
+      "credited_to": {
+        "id": 92120,
+        "email": "test123@example.com",
+        "name": "Greenhouse Admin",
+        "employee_id": "123ABC"
+      },
+      "rejection_reason": null,
+      "rejection_details": null,
+      "current_stage": {
+        "id": 2944102,
+        "name": "Preliminary Phone Screen",
+        "interviews": [
+          {
+            "id": 4368004,
+            "name": "Preliminary Screening Call",
+            "status": "to_be_scheduled",
+            "interview_kit": {
+              "url": "http://app.greenhouse.io/guides/4368142/people/60304594?application_id=71980812",
+              "content": "<p>Directions on how to conduct this interview.</p>",
+              "questions": [
+                {
+                  "id": 3136352,
+                  "question": "Could you tell me about your previous experience?"
+                },
+                {
+                  "id": 3136353,
+                  "question": "Why do you want to work with us?"
+                }
+              ]
+            },
+            "interviewers": []
+          }
+        ]
+      },
+      "prospect_detail": {
+        "prospect_pool": null,
+        "prospect_stage": null,
+        "prospect_owner": null
+      },
+      "custom_fields": {
+        "application_custom_test": {
+          "name": "Application Custom Test",
+          "type": "single_select",
+          "value": null
+        },
+        "custom_boolean_test": {
+          "name": "Custom Boolean Test",
+          "type": "boolean",
+          "value": null
+        }
+      },
+      "candidate": {
+        "id": 60304594,
+        "first_name": "Jane",
+        "last_name": "Smith",
+        "title": "Manager",
+        "company": "Current Company Co.",
+        "created_at": "2017-10-27T14:44:42Z",
+        "external_id": null,
+        "photo_url": null,
+        "url": "http://app.greenhouse.io/people/60304594",
+        "is_private": false,
+        "can_email": true,
+        "phone_numbers": [
+          {
+            "value": "555-555-5555",
+            "type": "mobile"
+          }
+        ],
+        "email_addresses": [
+          {
+            "value": "person@work.com",
+            "type": "work"
+          },
+          {
+            "value": "person@example.com",
+            "type": "personal"
+          }
+        ],
+        "addresses": [
+          {
+            "value": "123 Test Street\nNew York, NY 10001",
+            "type": "home"
+          }
+        ],
+        "website_addresses": [
+          {
+            "value": "mysite.com",
+            "type": "personal"
+          }
+        ],
+        "social_media_addresses": [
+          {
+            "value": "socialmedia.com"
+          }
+        ],
+        "educations": [
+          {
+            "school_name": "Stanford University",
+            "degree": "Bachelor's Degree",
+            "discipline": "Computer Science",
+            "start_date": "09/15/2007",
+            "end_date": "05/15/2011"
+          }
+        ],
+        "employments": [],
+        "recruiter": {
+          "id": 92121,
+          "email": "employee@test.com",
+          "name": "Betty Smith",
+          "employee_id": "123ABC"
+        },
+        "coordinator": {
+          "id": 92427,
+          "email": "user@example.com",
+          "name": "Bonnie Bonnet",
+          "employee_id": "456DEF"
+        },
+        "attachments": [
+          {
+            "filename": "Test Cover Letter.docx",
+            "url": "https://prod-heroku.s3.amazonaws.com/...",
+            "type": "cover_letter"
+          },
+          {
+            "filename": "Test Resume.docx",
+            "url": "https://prod-heroku.s3.amazonaws.com/...",
+            "type": "resume"
+          }
+        ],
+        "tags": [
+          "Ruby",
+          "Comp Sci"
+        ],
+        "custom_fields": {
+          "date_test": {
+            "name": "Date Test",
+            "type": "date",
+            "value": ""
+          },
+          "desired_salary": {
+            "name": "Desired Salary",
+            "type": "short_text",
+            "value": null
+          },
+          "graduation_year_1": {
+            "name": "Graduation Year",
+            "type": "single_select",
+            "value": null
+          },
+          "work_remotely": {
+            "name": "Work Remotely",
+            "type": "boolean",
+            "value": null
+          }
+        }
+      },
+      "jobs": [
+        {
+          "id": 274075,
+          "name": "Data Scientist",
+          "requisition_id": "ABC",
+          "notes": null,
+          "confidential": false,
+          "job_post_id": 263533,
+          "status": "open",
+          "created_by_id": 273555,
+          "created_at": "2016-07-14T17:21:30Z",
+          "opened_at": "2016-07-20T16:00:00Z",
+          "closed_at": null,
+          "url": "http://app.greenhouse.io/sdash/274075",
+          "departments": [
+            {
+              "id": 8717,
+              "name": "Data Science",
+              "external_id": "ex-dept-1"
+            }
+          ],
+          "offices": [
+            {
+              "id": 16478,
+              "name": "London",
+              "location": "London, United Kingdom",
+              "external_id": "ex-office-1"
+            }
+          ],
+          "hiring_team": {
+            "hiring_managers": [
+              {
+                "user_id": 92913,
+                "employee_id": "123ABC"
+              }
+            ],
+            "sourcers": [
+              {
+                  "user_id": 92427,
+                "employee_id": null
+              }
+            ],
+            "recruiters":  [
+              {
+                  "user_id": 92427,
+                "employee_id": null
+              }
+            ],
+            "coordinators": [
+              {
+                "user_id": 92427,
+                "employee_id": "DEFG123"
+              }
+            ]
+          },
+          "custom_fields": {
+            "date_test": {
+              "name": "Date Test",
+              "type": "date",
+              "value": "2017-10-27"
+            },
+            "employment_type": {
+              "name": "Employment",
+              "type": "single_select",
+              "value": "Full-time"
+            },
+            "replacement_role_": {
+              "name": "Replacement Role",
+              "type": "boolean",
+              "value": true
+            },
+            "salary_range_2": {
+              "name": "Salary Range",
+              "type": "currency_range",
+              "value": {
+                "unit": null,
+                "min_value": "10000.0",
+                "max_value": "10000.0"
+              }
+            },
+            "test_field_1": {
+              "name": "Test Short Text Field",
+              "type": "short_text",
+              "value": "test"
+            },
+            "test_user_field": {
+              "name": "Test User Field",
+              "type": "user",
+              "value": {
+                "user_id": 117730,
+                "name": "Job Admin",
+                "email": "asegal+jobadmin@greenhouse.io",
+                "employee_id": "user-abc"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
