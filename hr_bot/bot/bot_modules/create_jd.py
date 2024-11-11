@@ -12,8 +12,6 @@ from botbuilder.core import TurnContext, MessageFactory, CardFactory
 from botbuilder.schema import ActionTypes, CardAction, HeroCard, SuggestedActions, Attachment
 from hr_bot.config import DefaultConfig
 
-print(DefaultConfig.BC_OPENAI_API_KEY)
-
 file_path = r'bot/bot_modules/ques_modified.json'
 
 # Initialize OpenAI
