@@ -5,6 +5,7 @@ from app.greenhouse_applications.webhook_api import router as webhook_router
 from app.core.logger_setup import setup_logger
 from app.core.config import settings
 
+from app.core.logger_setup import setup_logger
 # Set up the logger
 logger = setup_logger()
 
