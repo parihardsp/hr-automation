@@ -1,10 +1,9 @@
-# dao.py
-
-from sqlalchemy.orm import Session
-from typing import Dict, Any, Optional
-from datetime import datetime
-from .models import Candidate, CandidateAttachment, Job, Application, JobContent
+import json
 import logging
+from datetime import datetime
+from sqlalchemy.orm import Session
+from typing import Dict, Any, Optional, List
+from .models import Candidate, CandidateAttachment, Job, Application, JobContent,  ProcessedJD, ProcessedResume, SimilarityScore
 
 logger = logging.getLogger(__name__)
 
@@ -362,6 +361,27 @@ class DAO:
             self.db.rollback()
             logger.error(f"Error adding job content: {str(e)}")
             raise Exception(f"Error adding job content: {str(e)}")
+        
+    def get_application_by_id(self, application_id: int) -> Optional[Application]:
+        """
+        Get application by application_id
+        """
+        try:
+            logger.info(f"Checking for existing application with ID: {application_id}")
+            application = self.db.query(Application).filter(
+                Application.application_id == application_id
+            ).first()
+
+            if application:
+                logger.info(f"Found existing application with ID: {application_id}")
+            else:
+                logger.info(f"No existing application found with ID: {application_id}")
+
+            return application
+
+        except Exception as e:
+            logger.error(f"Error checking application existence: {str(e)}")
+            raise Exception(f"Error checking application existence: {str(e)}")
 
     def get_job_content(self, job_id: int) -> Optional[JobContent]:
         """

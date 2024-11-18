@@ -154,8 +154,14 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
         candidate_record = dao.add_candidate(candidate_data)
 
         logger.info("Processing attachments")
+        resume_attachment = None
         for attachment in candidate_data.get('attachments', []):
-            dao.add_candidate_attachment(candidate_record.candidate_id, attachment)
+            attachment_record = dao.add_candidate_attachment(candidate_record.candidate_id, attachment)
+
+             # Identify and store resume attachment specifically
+            if attachment.get('type') == 'resume':
+                resume_attachment = attachment_record
+                logger.info(f"Resume attachment identified: {attachment.get('filename')}")
 
         # 4. Process job and application
         logger.info("Processing job data")
@@ -226,10 +232,10 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
                     
                     analysis = json.dumps(result["formatted_resume"])
 
-                    dao.update_candidate_from_resume(
-                        candidate_id=candidate_record.candidate_id,
-                        processed_resume=result["formatted_resume"]
-                        )
+                    # dao.update_candidate_from_resume(
+                    #     candidate_id=candidate_record.candidate_id,
+                    #     processed_resume=result["formatted_resume"]
+                    #     )
                 # Save processed resume
                 processed_resume_record = dao.add_processed_resume(
                     candidate_id=candidate_record.candidate_id,
