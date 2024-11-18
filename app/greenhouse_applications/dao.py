@@ -64,6 +64,106 @@ class DAO:
             self.db.rollback()
             logger.error(f"Error adding candidate: {str(e)}")
             raise Exception(f"Error adding candidate: {str(e)}")
+        
+    def update_candidate_from_resume(self, candidate_id: int, processed_resume: Dict[str, Any]) -> Candidate:
+        """
+        Update candidate information from processed resume data.
+        
+        Args:
+            candidate_id: The ID of the candidate to update
+            processed_resume: Dictionary containing processed resume information
+            
+        Returns:
+            Candidate: Updated candidate record
+        """
+        try:
+            logger.info(f"Updating candidate {candidate_id} with processed resume data")
+
+            # Get existing candidate
+            candidate = self.db.query(Candidate).filter(
+                Candidate.candidate_id == candidate_id
+            ).first()
+
+            if not candidate:
+                raise Exception(f"Candidate not found with ID: {candidate_id}")
+
+            # Get personal info from processed resume
+            personal_info = processed_resume.get('personalInfo', {})
+            
+            # Update candidate fields if they exist in the resume
+            if personal_info.get('name'):
+                name_parts = personal_info['name'].split(maxsplit=1)
+                candidate.first_name = name_parts[0]
+                candidate.last_name = name_parts[1] if len(name_parts) > 1 else ''
+                
+            if personal_info.get('email'):
+                candidate.email_addresses = [personal_info['email']]
+                
+            if personal_info.get('phone'):
+                candidate.phone_numbers = [personal_info['phone']]
+                
+            if personal_info.get('location'):
+                candidate.addresses = [personal_info['location']]
+                
+            # Update professional information
+            work_experience = processed_resume.get('workExperience', [])
+            if work_experience:
+                latest_job = work_experience[0]  # Most recent job
+                candidate.title = latest_job.get('position')
+                candidate.company = latest_job.get('companyName')
+
+            # Update education with exact format matching
+            education = processed_resume.get('education', [])
+            if education:
+                candidate.education = [
+                    {
+                        'degree': edu.get('degree'),
+                        'field_of_study': edu.get('field'),
+                        'school_name': edu.get('institution'),
+                        'graduation_year': edu.get('graduationYear'),
+                        'gpa': edu.get('gpa')
+                    }
+                    for edu in education
+                    if any(edu.values())  # Only include education entries that have any values
+                ]
+
+            # Update skills as tags
+            skills = processed_resume.get('skills', {})
+            all_skills = []
+            all_skills.extend(skills.get('technical', []))
+            all_skills.extend(skills.get('soft', []))
+            all_skills.extend(skills.get('languages', []))
+            if all_skills:
+                candidate.tags = all_skills
+            
+            custom_fields = {}
+            # Get existing custom_fields if any
+            if candidate.custom_fields:
+                custom_fields = candidate.custom_fields.copy()
+            certifications = processed_resume.get('certifications', [])
+            if certifications:
+                custom_fields['certifications'] = certifications
+            projects = processed_resume.get('projects', [])
+            if projects:
+                custom_fields['projects'] = projects
+            company_background = processed_resume.get('companyBackground')
+            if company_background:
+                custom_fields['company_background'] = company_background
+            
+            logger.info(f"Previous custom_fields: {candidate.custom_fields}")
+            logger.info(f"New custom_fields: {custom_fields}")
+            candidate.custom_fields = custom_fields
+            candidate.updated_at = datetime.utcnow()
+
+            self.db.commit()
+            logger.info(f"Successfully updated candidate {candidate_id} with resume data")
+            logger.info(f"Final custom_fields: {candidate.custom_fields}")
+            return candidate
+
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error updating candidate from resume: {str(e)}")
+            raise Exception(f"Error updating candidate from resume: {str(e)}")
 
     def add_candidate_attachment(self, candidate_id: int, attachment_data: Dict[str, Any]) -> CandidateAttachment:
         """
@@ -294,3 +394,244 @@ class DAO:
         except Exception as e:
             logger.error(f"Error fetching job: {str(e)}")
             raise Exception(f"Error fetching job: {str(e)}")
+
+    def get_top_resumes_for_job(self, job_id: int) -> List[SimilarityScore]:
+        """
+        Fetch the top 10 resumes for the given job ID, ordered by the overall score.
+
+        Args:
+            job_id (int): The ID of the job for which to fetch the top resumes.
+
+        Returns:
+            List[SimilarityScore]: A list of the top 10 SimilarityScore records for the given job ID.
+        """
+        try:
+            logger.info(f"Fetching top 10 resumes for job ID: {job_id}")
+            top_resumes = self.db.query(SimilarityScore) \
+                .filter(SimilarityScore.job_id == job_id) \
+                .order_by(SimilarityScore.overall_score.desc()) \
+                .limit(10) \
+                .all()
+
+            return top_resumes
+
+        except Exception as e:
+            logger.error(f"Error fetching top resumes for job ID {job_id}: {str(e)}")
+            raise Exception(f"Error fetching top resumes for job ID {job_id}: {str(e)}")
+
+    def get_candidate_by_id(self, candidate_id: int) -> Candidate:
+        """
+        Fetch a candidate by their ID.
+
+        Args:
+            candidate_id (int): The ID of the candidate to fetch.
+
+        Returns:
+            Candidate: The Candidate record with the given ID.
+        """
+        try:
+            logger.info(f"Fetching candidate with ID: {candidate_id}")
+            candidate = self.db.query(Candidate).filter(Candidate.candidate_id == candidate_id).first()
+
+            if not candidate:
+                logger.info(f"No candidate found with ID: {candidate_id}")
+                raise Exception(f"No candidate found with ID: {candidate_id}")
+
+            return candidate
+
+        except Exception as e:
+            logger.error(f"Error fetching candidate with ID {candidate_id}: {str(e)}")
+            raise Exception(f"Error fetching candidate with ID {candidate_id}: {str(e)}")
+    def add_processed_jd(self, job_id: int, job_content_id: int, formatted_jd: str) -> ProcessedJD:
+        """
+        Insert processed job description data
+
+        Args:
+            job_id: The ID of the job
+            job_content_id: The ID of the job content
+            formatted_jd: String containing the formatted JD JSON from GPT
+
+        Returns:
+            ProcessedJD: The created or updated processed JD record
+        """
+        try:
+            logger.info(f"Adding processed JD for job ID: {job_id}")
+
+            # Clean and parse the JSON string
+            cleaned_jd = formatted_jd.strip("```json").strip("```").strip()
+            formatted_jd_dict = json.loads(cleaned_jd)
+
+            # Check if processed JD already exists
+            existing_processed_jd = self.db.query(ProcessedJD).filter(
+                ProcessedJD.job_id == job_id,
+                ProcessedJD.job_content_id == job_content_id
+            ).first()
+
+            if existing_processed_jd:
+                logger.info(f"Updating existing processed JD for job ID: {job_id}")
+                existing_processed_jd.required_experience = formatted_jd_dict.get('requiredWorkExperience')
+                existing_processed_jd.required_skills = formatted_jd_dict.get('requiredSkills')
+                existing_processed_jd.roles_responsibilities = formatted_jd_dict.get('rolesAndResponsibilities')
+                existing_processed_jd.requiredQualifications = formatted_jd_dict.get('requiredQualifications')
+                existing_processed_jd.requiredCertifications = formatted_jd_dict.get('requiredCertifications')
+                existing_processed_jd.processing_status = 'completed'
+                existing_processed_jd.updated_at = datetime.utcnow()
+
+                self._commit_with_rollback("updating processed JD")
+                return existing_processed_jd
+
+            processed_jd = ProcessedJD(
+                job_id=job_id,
+                job_content_id=job_content_id,
+                required_experience=formatted_jd_dict.get('requiredWorkExperience'),
+                required_skills=formatted_jd_dict.get('requiredSkills'),
+                roles_responsibilities=formatted_jd_dict.get('rolesAndResponsibilities'),
+                requiredQualifications=formatted_jd_dict.get('requiredQualifications'),
+                requiredCertifications=formatted_jd_dict.get('requiredCertifications'),
+                processing_status='completed'
+            )
+
+            self.db.add(processed_jd)
+            self._commit_with_rollback("adding processed JD")
+            logger.info(f"Successfully added processed JD for job ID: {job_id}")
+            return processed_jd
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding JSON for job ID {job_id}: {str(e)}")
+            raise Exception(f"Invalid JSON format in formatted JD: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error adding processed JD: {str(e)}")
+            raise Exception(f"Error adding processed JD: {str(e)}")
+
+    def add_processed_resume(self, candidate_id: int, attachment_id: int, formatted_resume: str) -> ProcessedResume:
+        """
+        Insert processed resume data
+
+        Args:
+            candidate_id: The ID of the candidate
+            attachment_id: The ID of the candidate attachment (resume file)
+            formatted_resume: String containing the formatted resume JSON from GPT
+
+        Returns:
+            ProcessedResume: The created or updated processed resume record
+        """
+        try:
+            logger.info(f"Adding processed resume for candidate ID: {candidate_id}, attachment ID: {attachment_id}")
+
+            # Clean and parse the JSON string
+            # cleaned_resume = formatted_resume.strip("```json").strip("```").strip()
+            formatted_resume_dict = json.loads(formatted_resume)
+
+            # Check if processed resume already exists for this candidate and attachment
+            existing_processed_resume = self.db.query(ProcessedResume).filter(
+                ProcessedResume.candidate_id == candidate_id,
+                ProcessedResume.attachment_id == attachment_id
+            ).first()
+
+            if existing_processed_resume:
+                logger.info(f"Updating existing processed resume for candidate ID: {candidate_id}")
+                existing_processed_resume.personal_section = formatted_resume_dict.get('personalInfo')
+                existing_processed_resume.experience_section = formatted_resume_dict.get('workExperience')
+                existing_processed_resume.skills_section = formatted_resume_dict.get('skills')
+                existing_processed_resume.qualifcation_section = formatted_resume_dict.get('education')
+                existing_processed_resume.project_section = formatted_resume_dict.get('projects')
+                existing_processed_resume.certifications = formatted_resume_dict.get('certifications')
+                existing_processed_resume.company_bg_details = formatted_resume_dict.get('companyBackground')
+                existing_processed_resume.processing_status = 'completed'
+                existing_processed_resume.updated_at = datetime.utcnow()
+
+                self._commit_with_rollback("updating processed resume")
+                return existing_processed_resume
+
+            processed_resume = ProcessedResume(
+                candidate_id=candidate_id,
+                attachment_id=attachment_id,
+                personal_section=formatted_resume_dict.get('personalInfo'),
+                qualifcation_section=formatted_resume_dict.get('education'),
+                experience_section=formatted_resume_dict.get('workExperience'),
+                skills_section=formatted_resume_dict.get('skills'),
+                certifications=formatted_resume_dict.get('certifications'),
+                project_section=formatted_resume_dict.get('projects'),
+                company_bg_details=formatted_resume_dict.get('companyBackground'),
+                processing_status='completed'
+            )
+
+            self.db.add(processed_resume)
+            self._commit_with_rollback("adding processed resume")
+            logger.info(f"Successfully added processed resume for candidate ID: {candidate_id}")
+            return processed_resume
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding JSON for candidate ID {candidate_id}: {str(e)}")
+            # Update status to failed in case of JSON error
+            if 'processed_resume' in locals():
+                processed_resume.processing_status = 'failed'
+                self._commit_with_rollback("updating failed status")
+            raise Exception(f"Invalid JSON format in formatted resume: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error adding processed resume: {str(e)}")
+            # Update status to failed in case of any other error
+            if 'processed_resume' in locals():
+                processed_resume.processing_status = 'failed'
+                self._commit_with_rollback("updating failed status")
+            raise Exception(f"Error adding processed resume: {str(e)}")
+
+    def add_similarity_score(
+            self,
+            candidate_id: int,
+            job_id: int,
+            application_id: int,
+            processed_resume_id: int,
+            processed_jd_id: int,
+            similarity_analysis: Dict[str, Any]
+    ) -> SimilarityScore:
+        """
+        Insert similarity score data
+
+        Args:
+            candidate_id: ID of the candidate
+            job_id: ID of the job
+            application_id: ID of the application
+            processed_resume_id: ID of the processed resume record
+            processed_jd_id: ID of the processed JD record
+            similarity_analysis: Dict containing overall score and detailed section analysis
+        """
+        try:
+            logger.info(f"Adding similarity score for application ID: {application_id}")
+
+            # Check if similarity score already exists
+            existing_score = self.db.query(SimilarityScore).filter(
+                SimilarityScore.application_id == application_id
+            ).first()
+
+            if existing_score:
+                logger.info(f"Updating existing similarity score for application ID: {application_id}")
+                existing_score.overall_score = similarity_analysis['matching_score']
+                existing_score.match_details = similarity_analysis['sections']
+                existing_score.updated_at = datetime.utcnow()
+
+                self._commit_with_rollback("updating similarity score")
+                return existing_score
+
+            # Create new similarity score record
+            new_score = SimilarityScore(
+                candidate_id=candidate_id,
+                job_id=job_id,
+                application_id=application_id,
+                processed_resume_id=processed_resume_id,
+                processed_jd_id=processed_jd_id,
+                overall_score=similarity_analysis['matching_score'],
+                match_details=similarity_analysis['sections']
+            )
+
+            self.db.add(new_score)
+            self._commit_with_rollback("adding similarity score")
+            logger.info(f"Successfully added similarity score for application ID: {application_id}")
+            return new_score
+
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Error adding similarity score: {str(e)}")
+            raise Exception(f"Error adding similarity score: {str(e)}")
