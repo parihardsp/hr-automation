@@ -5,12 +5,12 @@ from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
-
 class Candidate(Base):
     __tablename__ = 'candidates'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
-    candidate_id = Column(Integer, unique=True, nullable=False)
+    candidate_id = Column(Integer, unique=True, nullable=False)  # Unique constraint retained
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     title = Column(String(100))
@@ -33,6 +33,7 @@ class Candidate(Base):
 
 class CandidateAttachment(Base):
     __tablename__ = 'candidate_attachments'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     candidate_id = Column(Integer, ForeignKey('candidates.candidate_id'), nullable=False)
@@ -42,6 +43,7 @@ class CandidateAttachment(Base):
     blob_storage_path = Column(String(255), nullable=True)
     status = Column(String(50), nullable=False, default='pending')  # pending, downloaded, processed, failed
     created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     candidate = relationship("Candidate", back_populates="attachments")
@@ -50,6 +52,7 @@ class CandidateAttachment(Base):
 
 class Job(Base):
     __tablename__ = 'jobs'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, unique=True, nullable=False)
@@ -68,6 +71,7 @@ class Job(Base):
 
 class JobContent(Base):
     __tablename__ = 'job_content'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey('jobs.job_id'), nullable=False)
@@ -88,6 +92,7 @@ class JobContent(Base):
 
 class Application(Base):
     __tablename__ = 'applications'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     application_id = Column(Integer, unique=True, nullable=False)
@@ -110,6 +115,7 @@ class Application(Base):
 
 class ProcessedResume(Base):
     __tablename__ = 'processed_resumes'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     candidate_id = Column(Integer, ForeignKey('candidates.candidate_id'), nullable=False)
@@ -133,6 +139,7 @@ class ProcessedResume(Base):
 
 class ProcessedJD(Base):
     __tablename__ = 'processed_jd'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey('jobs.job_id'), nullable=False)
@@ -154,6 +161,7 @@ class ProcessedJD(Base):
 
 class SimilarityScore(Base):
     __tablename__ = 'similarity_scores'
+    __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
     candidate_id = Column(Integer, ForeignKey('candidates.candidate_id'), nullable=False)

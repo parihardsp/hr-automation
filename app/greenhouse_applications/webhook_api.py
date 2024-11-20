@@ -97,14 +97,15 @@ import hmac
 import hashlib
 import logging
 from app.greenhouse_applications.greenhouse_api import GreenhouseService
+
 from app.greenhouse_applications.services import format_jd_with_gpt, job_content, format_resume_with_gpt, \
     resume_content_sample, generate_similarity_scores
 
 router = APIRouter()
 from app.core.logger_setup import setup_logger
+
 # Set up the logger
 logger = setup_logger()
-
 
 
 @router.post("/simulate_webhook")
@@ -217,6 +218,10 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
             except Exception as e:
                 logger.error(f"Error processing resume: {str(e)}")
 
+        #Insering Background data:
+
+        resume_bg_record = processed_resume_record.experience_section
+
         # SIMILARITY SCORE:
         # After processing resume and JD
         if processed_resume_record and processed_jd_record and application_record:
@@ -263,7 +268,7 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
             content={
                 "message": "Webhook received and processed",
                 "candidate_id": candidate_record.candidate_id,
-                "processed_resume_record.id":processed_resume_record.id,
+                "processed_resume_record.id": processed_resume_record.id,
                 "job_id": job_record.job_id,
                 "application_id": application_record.application_id,
                 "status": "new"
@@ -307,6 +312,42 @@ async def get_top_resumes(job_id: int, db: Session = Depends(get_db)):
             })
 
         return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+from app.greenhouse_applications.models import ProcessedResume
+
+@router.get("/fetch-top-resumes/{job_id}")
+async def get_top_resumes_db(job_id: int, db: Session = Depends(get_db)):
+    try:
+        dao = DAO(db)
+        top_resumes = dao.get_top_resumes_for_job(job_id)
+
+        result = []
+        for resume_score in top_resumes:
+            candidate = dao.get_candidate_by_id(resume_score.candidate_id)
+            processed_resume = (
+                dao.db.query(ProcessedResume)
+                .filter(ProcessedResume.candidate_id == candidate.candidate_id)
+                .first()
+            )
+
+            match_details = resume_score.match_details if resume_score.match_details else []
+
+            # Construct the response as a dictionary
+            result.append({
+                "candidate_id": str(candidate.candidate_id),
+                "first_name": candidate.first_name,
+                "last_name": candidate.last_name,
+                "overall_score": str(resume_score.overall_score),
+                "match_details": match_details,  # List of dictionaries
+                "company_bg_details": processed_resume.company_bg_details if processed_resume else "",  # Empty string if None
+                "url": candidate.url
+            })
+
+        return result  # Return the constructed result directly
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
