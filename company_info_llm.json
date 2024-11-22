@@ -1,0 +1,33 @@
+{
+    "Atos Syntel": {
+        "llm_matched_info": {
+            "company_info": {
+                "Website": "https://www.atos-syntel.net/",
+                "description": "Atos Syntel is a division of Atos and a multinational provider of integrated technology and business services. It was created by the merger of Syntel, Inc. and Atos S.E. The company helps drive digital transformation for clients by modernizing and integrating their mainstream IT and deploying digital solutions at scale.",
+                "industry": "Information Technology and Services",
+                "Company size": "10001+ employees",
+                "Headquarters": "Bezons, France",
+                "type": "Public Company",
+                "key_products_services": [
+                    "IT Services",
+                    "Business Process Outsourcing",
+                    "Consulting",
+                    "Cloud Services",
+                    "Artificial Intelligence",
+                    "Cybersecurity",
+                    "Digital Transformation"
+                ],
+                "Founded": "2018",
+                "Specialties": [
+                    "IT Services",
+                    "Digital Transformation",
+                    "Business Process Outsourcing",
+                    "Consulting Services",
+                    "Cloud Services",
+                    "Artificial Intelligence",
+                    "Cybersecurity"
+                ]
+            }
+        }
+    }
+}

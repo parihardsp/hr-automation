@@ -1,8 +1,10 @@
 # bot/cv_bot.py
 from botbuilder.core import ActivityHandler, TurnContext, ConversationState, UserState, MessageFactory
 from botbuilder.dialogs import Dialog
-from hr_bot.dialogs.dialog_helper import DialogHelper
-from hr_bot.bot.bot_modules.create_jd import JobDescriptionHandler
+# from hr_bot.dialogs.dialog_helper import DialogHelper
+# from hr_bot.bot.bot_modules.backup_create_jd import JobDescriptionHandler
+from dialogs.dialog_helper import DialogHelper
+from bot.bot_modules.backup_create_jd import JobDescriptionHandler
 from botbuilder.schema import HeroCard, CardAction, ActionTypes, Attachment
 
 
