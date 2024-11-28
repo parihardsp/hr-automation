@@ -2,7 +2,7 @@
   "action": "new_candidate_application",
   "payload": {
     "application": {
-      "id": 71980813,
+      "id": 71980814,
       "rejected_at": null,
       "prospect": false,
       "status": "active",
@@ -65,7 +65,7 @@
         }
       },
       "candidate": {
-        "id": 60304595,
+        "id": 72156483,
         "first_name": "John",
         "last_name": "Doe",
         "title": "Software Engineer",

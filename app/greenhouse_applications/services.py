@@ -25,6 +25,7 @@ openai.api_version = "2023-03-15-preview"
 deployment_name = "gpt-4-32k"
 openai.api_type = "azure"
 
+
 class CandidateJobEvaluator:
     def __init__(self):
         self.blob_service_client = BlobServiceClient(account_url=account_url, credential=account_key)
@@ -85,7 +86,7 @@ class CandidateJobEvaluator:
         Upload a PDF file to Azure Blob Storage.
         """
         try:
-            pdf_path = Path('C:/Users/AnishaChoudhury/Documents/Code/hr-automation/Resumes').joinpath(pdf_filename)
+            pdf_path = Path('./Resumes') / pdf_filename
             logger.info(f"Looking for file at path: {pdf_path}")
 
             if not os.path.exists(pdf_path):
@@ -115,28 +116,27 @@ class CandidateJobEvaluator:
             logger.error(f"Error uploading blob: {str(e)}")
             return False
 
-    
     def extract_text_from_pdf(self, pdf_content):
-      """Extract text from a PDF file content."""
-      print('inside extract_text_from_pdf')
-      text = ""
-      try:
-        # Create a PDF file object from bytes
-        pdf_file = io.BytesIO(pdf_content)
-        # Create PDF reader object
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
-        
-        # Extract text from each page
-        for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
-        # print(text)
-        
-              
-      except Exception as e:
-          raise Exception(f"Error extracting text from PDF: {str(e)}")
-      
-      return text
-    
+        """Extract text from a PDF file content."""
+        print('inside extract_text_from_pdf')
+        text = ""
+        try:
+            # Create a PDF file object from bytes
+            pdf_file = io.BytesIO(pdf_content)
+            # Create PDF reader object
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+
+            # Extract text from each page
+            for page in pdf_reader.pages:
+                text += page.extract_text() + "\n"
+            # print(text)
+
+
+        except Exception as e:
+            raise Exception(f"Error extracting text from PDF: {str(e)}")
+
+        return text
+
     def get_latest_blob_with_sas(self) -> tuple[str, str, str]:
         """
         Get the latest blob from the container with its SAS token.
@@ -144,29 +144,29 @@ class CandidateJobEvaluator:
         try:
             container_client = self.blob_service_client.get_container_client(container_name)
             blobs = list(container_client.list_blobs())
-            
+
             if not blobs:
                 logger.error("No blobs found in container")
                 raise Exception("No blobs found in container")
 
             latest_blob = max(blobs, key=lambda x: x.last_modified)
             latest_blob_name = latest_blob.name
-            
+
             logger.info(f"Latest blob found: {latest_blob_name}, Last modified: {latest_blob.last_modified}")
-            
+
             sas_token = self.generate_sas_token(container_name, latest_blob_name)
             blob_url = f"{account_url}/{container_name}/{latest_blob_name}?{sas_token}"
 
             response = requests.get(blob_url)
             if response.status_code != 200:
                 raise Exception(f"Failed to download blob: {response.status_code}")
-            
+
             # Extract text from PDF
             extracted_text = self.extract_text_from_pdf(response.content)
             # print(f'get_latest_blob_with_sas:{extracted_text}')
-            
+
             return latest_blob_name, blob_url, extracted_text
-                
+
         except Exception as e:
             logger.error(f"Error getting latest blob with SAS: {str(e)}")
             raise
@@ -221,7 +221,7 @@ class CandidateJobEvaluator:
             engine=deployment_name,
             messages=[
                 {"role": "system",
-                "content": prompt},
+                 "content": prompt},
             ],
             max_tokens=1500,
             temperature=0.7
@@ -232,16 +232,16 @@ class CandidateJobEvaluator:
         return analysis
 
     def format_resume_with_gpt(self, resume_text: str) -> Dict[str, Any]:
-      """
+        """
       Format resume text using GPT-4 into structured JSON
       """
-      resume_text = resume_text.encode('utf-8', errors='ignore').decode('utf-8')
+        resume_text = resume_text.encode('utf-8', errors='ignore').decode('utf-8')
 
-      system_message = """You are an AI that reformats resumes into structured JSON. 
+        system_message = """You are an AI that reformats resumes into structured JSON. 
       Extract all relevant information and return ONLY valid JSON without any additional text or explanation.
       Ensure the response can be parsed by json.loads(). Include all available skills, work experience, and education details."""
 
-      prompt = f"""Please format the following resume into valid JSON using this exact structure:
+        prompt = f"""Please format the following resume into valid JSON using this exact structure:
       ```json
       {{
           "personalInfo": {{
@@ -295,33 +295,33 @@ class CandidateJobEvaluator:
       Resume text:
       {resume_text}
       """
-      try:
-          response = openai.ChatCompletion.create(
-              engine=deployment_name,
-              messages=[
-                  {"role": "system", "content": system_message},
-                  {"role": "user", "content": prompt}
-              ],
-              max_tokens=2000,
-              temperature=0.7
-          )
+        try:
+            response = openai.ChatCompletion.create(
+                engine=deployment_name,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=2000,
+                temperature=0.7
+            )
 
-          response_text = response.choices[0].message.content.strip()          
-          try:
-              parsed_json = json.loads(response_text)
-            #   parsed_json["processing_status"] = "COMPLETED"
-            #   self.formatted_resume = parsed_json
-              return parsed_json
-          except json.JSONDecodeError as e:
-              
-              logger.error(f"Error parsing GPT response as JSON: {e}")
-              logger.error(f"Raw response: {response_text}")
-              return None
+            response_text = response.choices[0].message.content.strip()
+            try:
+                parsed_json = json.loads(response_text)
+                #   parsed_json["processing_status"] = "COMPLETED"
+                #   self.formatted_resume = parsed_json
+                return parsed_json
+            except json.JSONDecodeError as e:
 
-      except Exception as e:
-          logger.error(f"Error in GPT API call: {e}")
-          return None
-      
+                logger.error(f"Error parsing GPT response as JSON: {e}")
+                logger.error(f"Raw response: {response_text}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error in GPT API call: {e}")
+            return None
+
     def get_company_info_with_llm(self, company_name: str) -> Dict[str, Any]:
         """
         Use GPT to identify and provide information about a company.
@@ -381,7 +381,7 @@ class CandidateJobEvaluator:
                 )
 
                 response_text = response.choices[0].message.content.strip()
-                
+
                 try:
                     parsed_json = json.loads(response_text)
                     return parsed_json
@@ -397,7 +397,7 @@ class CandidateJobEvaluator:
         except Exception as e:
             logger.error(f"Error getting company info with LLM: {str(e)}")
             return None
-      
+
     def get_companies_info(self) -> Dict[str, Any]:
         """
         Get information about the two most recent companies using LLM.
@@ -405,7 +405,7 @@ class CandidateJobEvaluator:
         try:
             if not self.formatted_resume:
                 raise ValueError("No formatted resume data available. Please process the resume first.")
-                
+
             work_experience = self.formatted_resume.get("workExperience", [])
             if not work_experience:
                 raise ValueError("No work experience found in the formatted resume")
@@ -420,7 +420,7 @@ class CandidateJobEvaluator:
 
                 # Get company information using LLM
                 llm_info = self.get_company_info_with_llm(company_name)
-                
+
                 if llm_info:
                     company_info[company_name] = {
                         "llm_matched_info": llm_info
@@ -434,21 +434,20 @@ class CandidateJobEvaluator:
             output_filename = 'company_info_llm.json'
             with open(output_filename, 'w', encoding='utf-8') as output_file:
                 json.dump(company_info, output_file, ensure_ascii=False, indent=4)
-                
+
             logger.info(f"Company information saved to {output_filename}")
             return company_info
 
         except Exception as e:
             logger.error(f"Error in getting companies info: {str(e)}")
             return {"error": str(e)}
-        
 
     def generate_similarity_scores(
-        self,
-        resume_text: Dict[str, Any],
-        jd_data: Dict[str, Any],
-        application_id: int
-        ) -> Dict[str, Any]:
+            self,
+            resume_text: Dict[str, Any],
+            jd_data: Dict[str, Any],
+            application_id: int
+    ) -> Dict[str, Any]:
         """
         Generate similarity scores between processed resume and JD using GPT
 
@@ -537,7 +536,6 @@ class CandidateJobEvaluator:
         except Exception as e:
             logger.error(f"Error generating similarity scores: {str(e)}")
             raise
-    
 
     def process_resume(self, pdf_filename: str) -> dict:
         """
@@ -548,11 +546,11 @@ class CandidateJobEvaluator:
             upload_success, blob_pdf_url = self.upload_pdf_to_blob(pdf_filename)
             if not upload_success:
                 raise Exception("Failed to upload PDF to blob storage")
-            
+
             latest_blob_name, blob_url, extracted_text = self.get_latest_blob_with_sas()
             formatted_resume = self.format_resume_with_gpt(extracted_text)
             if formatted_resume is None:
-              raise Exception("Failed to format resume with GPT")
+                raise Exception("Failed to format resume with GPT")
             self.formatted_resume = formatted_resume
             company_info = self.get_companies_info()
             if company_info:
@@ -562,7 +560,7 @@ class CandidateJobEvaluator:
                 "status": "success",
                 "uploaded_file": pdf_filename,
                 "latest_blob": latest_blob_name,
-                "blob_pdf_url" : blob_pdf_url,
+                "blob_pdf_url": blob_pdf_url,
                 "formatted_resume": formatted_resume
 
             }
@@ -576,32 +574,33 @@ class CandidateJobEvaluator:
             }
 
 # Testing functions for local development
-def test_resume_processing():
-    """
-    Test function for local development and testing resume processing.
-    """
-    try:
-        processor = CandidateJobEvaluator()
-        
-        # Test cases
-        pdf_filename = 'AkshayRodi.pdf'
-        result = processor.process_resume(pdf_filename)
-        
-        if result["status"] == "success":
-            print("\nFormatted Resume (JSON):")
-            print("-" * 50)
-            print(json.dumps(result['formatted_resume'], indent=2))
-            print(f"\nBlob Storage Path: {result['blob_pdf_url']}")
-            print("Processing completed successfully!")
-        else:
-            print("\nProcessing Failed:")
-            print(f"Error: {result['error_message']}")
-        
-        print("-" * 80)  # Separator between test cases
-            
-    except Exception as e:
-        logger.error(f"Test execution error: {str(e)}")
-
-if __name__ == "__main__":
-    # Run tests when file is executed directly
-    test_resume_processing()
+# def test_resume_processing():
+#     """
+#     Test function for local development and testing resume processing.
+#     """
+#     try:
+#         processor = CandidateJobEvaluator()
+#
+#         # Test cases
+#         pdf_filename = 'AkshayRodi.pdf'
+#         result = processor.process_resume(pdf_filename)
+#
+#         if result["status"] == "success":
+#             print("\nFormatted Resume (JSON):")
+#             print("-" * 50)
+#             print(json.dumps(result['formatted_resume'], indent=2))
+#             print(f"\nBlob Storage Path: {result['blob_pdf_url']}")
+#             print("Processing completed successfully!")
+#         else:
+#             print("\nProcessing Failed:")
+#             print(f"Error: {result['error_message']}")
+#
+#         print("-" * 80)  # Separator between test cases
+#
+#     except Exception as e:
+#         logger.error(f"Test execution error: {str(e)}")
+#
+#
+# if __name__ == "__main__":
+#     # Run tests when file is executed directly
+#     test_resume_processing()

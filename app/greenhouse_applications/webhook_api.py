@@ -1,113 +1,41 @@
-# from fastapi import APIRouter, Depends, Request, HTTPException
-# from fastapi.responses import JSONResponse
-# from sqlalchemy.orm import Session
-# from app.database import get_db
-# from app.greenhouse_applications.dao import DAO
-# import hmac
-# import hashlib
-# import logging
-# from app.greenhouse_applications.greenhouse_api import GreenhouseService
-#
-# router = APIRouter()
-# logger = logging.getLogger(__name__)
-#
-#
-# @router.post("/simulate_webhook")
-# async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
-#     secret_key = "your_secret_key_here"
-#     signature = request.headers.get("Signature")
-#
-#     # Verify signature
-#     if not signature or not verify_signature(secret_key, await request.body(), signature):
-#         logger.warning("Invalid signature received.")
-#         raise HTTPException(status_code=403, detail="Invalid signature")
-#
-#     try:
-#         # 1. Get webhook data
-#         data = await request.json()
-#         logger.info("Incoming webhook data received")
-#
-#         application_data = data['payload']['application']
-#         candidate_data = application_data['candidate']
-#         job_data = application_data['jobs'][0]  # Assuming the first job in the array
-#
-#         # Fix: Correct way to get job_id from job_data
-#         job_id = job_data['id']  # Changed from application_data['jobs']['id']
-#
-#         # 2. Initialize DAO
-#         dao = DAO(db)
-#
-#         # 3. Process candidate and attachments
-#         logger.info("Processing candidate data")
-#         candidate_record = dao.add_candidate(candidate_data)
-#
-#         logger.info("Processing attachments")
-#         for attachment in candidate_data.get('attachments', []):
-#             dao.add_candidate_attachment(candidate_record.candidate_id, attachment)
-#
-#         # 4. Process job and application
-#         logger.info("Processing job data")
-#         job_record = dao.add_job(job_data)
-#
-#         logger.info("Processing application data")
-#         application_record = dao.add_application(
-#             application_data,
-#             candidate_record.candidate_id,
-#             job_record.job_id
-#         )
-#
-#         # 5. Fetch and save job content using the job_id
-#         logger.info(f"Fetching job content for job_id: {job_id}")
-#         greenhouse_service = GreenhouseService(board_token="your_board_token")
-#         job_content_data = await greenhouse_service.fetch_job_content(job_id)
-#
-#         logger.info("Saving job content")
-#         # Fix: Use job_record.job_id instead of job_id for consistency
-#         job_content_record = dao.add_job_content(job_record.job_id, job_content_data)
-#
-#         logger.info(
-#             f"Webhook processed successfully for candidate: {candidate_data['first_name']} {candidate_data['last_name']}")
-#
-#         return JSONResponse(
-#             content={
-#                 "message": "Webhook received and processed",
-#                 "candidate_id": candidate_record.candidate_id,
-#                 "job_id": job_record.job_id,  # Changed from job_id to job_record.job_id
-#                 "application_id": application_record.application_id
-#             },
-#             status_code=200
-#         )
-#
-#     except Exception as e:
-#         logger.error("Error processing webhook: %s", str(e))
-#         raise HTTPException(status_code=500, detail=str(e))  # Changed to include error message
-#
-#
-# def verify_signature(secret_key: str, message_body: bytes, signature: str) -> bool:
-#     hash = hmac.new(secret_key.encode(), message_body, hashlib.sha256).hexdigest()
-#     return hmac.compare_digest(hash, signature)
+import hashlib
+import hmac
+import json
 import os
 import sys
-import json
-import hmac
-import hashlib
 from pathlib import Path
-from typing import Dict, List
-from sqlalchemy.orm import Session
+
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from app.database import get_db
 from app.greenhouse_applications.dao import DAO
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import Request
 from app.greenhouse_applications.greenhouse_api import GreenhouseService
 from app.greenhouse_applications.services import CandidateJobEvaluator
-# from app.greenhouse_applications.services import format_jd_with_gpt, job_content, format_resume_with_gpt, \
-#     resume_content_sample, generate_similarity_scores
 
-router = APIRouter()
+from app.greenhouse_applications.models import (
+    Job,
+    Candidate,
+    SimilarityScore,
+    ProcessedResume
+)
+from app.greenhouse_applications.schema import (
+    ResumeResponse,
+    SortCriteria
+)
+from sqlalchemy import desc
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import List
+
 from app.core.logger_setup import setup_logger
+
 # Set up the logger
 logger = setup_logger()
+
+# Set up router
+router = APIRouter()
 
 
 @router.post("/simulate_webhook")
@@ -115,7 +43,6 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
     secret_key = "your_secret_key_here"
     signature = request.headers.get("Signature")
 
-    # Verify signature
     if not signature or not verify_signature(secret_key, await request.body(), signature):
         logger.warning("Invalid signature received.")
         raise HTTPException(status_code=403, detail="Invalid signature")
@@ -127,10 +54,8 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
 
         application_data = data['payload']['application']
         candidate_data = application_data['candidate']
-        job_data = application_data['jobs'][0]  # Assuming the first job in the array
-
-        # Fix: Correct way to get job_id from job_data
-        job_id = job_data['id']  # Changed from application_data['jobs']['id']
+        job_data = application_data['jobs'][0]
+        job_id = job_data['id']
 
         # 2. Initialize DAO & CandidateJobEvaluator
         dao = DAO(db)
@@ -146,120 +71,124 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
                     "application_id": existing_application.application_id,
                     "status": "existing"
                 },
-                status_code=409  # Conflict status code
+                status_code=409
             )
 
-        # 4. Process candidate and attachments
-        logger.info("Processing candidate data")
+        # 4. Process candidate (creates new record each time)
+        logger.info("Creating new candidate record")
         candidate_record = dao.add_candidate(candidate_data)
 
+        # 5. Process attachments (creates new record for each attachment)
         logger.info("Processing attachments")
         resume_attachment = None
         for attachment in candidate_data.get('attachments', []):
-            attachment_record = dao.add_candidate_attachment(candidate_record.candidate_id, attachment)
-
-             # Identify and store resume attachment specifically
+            attachment_record = dao.add_candidate_attachment(candidate_record.id, attachment)  # Using candidate.id now
             if attachment.get('type') == 'resume':
                 resume_attachment = attachment_record
                 logger.info(f"Resume attachment identified: {attachment.get('filename')}")
 
-        # 4. Process job and application
+        # 6. Process job (get existing or create new)
         logger.info("Processing job data")
-        job_record = dao.add_job(job_data)
+        job_record = dao.get_or_create_job(job_data)
 
+        # 7. Process application
         logger.info("Processing application data")
         application_record = dao.add_application(
             application_data,
-            candidate_record.candidate_id,
-            job_record.job_id
+            candidate_record.id,  # Using candidate.id
+            job_record.job_id  # Using job.job_id as it's unique
         )
 
-        # 5. Fetch and save job content using the job_id
+        # 8. Process job content
         logger.info(f"Fetching job content for job_id: {job_id}")
         greenhouse_service = GreenhouseService(board_token="your_board_token")
         job_content_data = await greenhouse_service.fetch_job_content(job_id)
 
         logger.info("Saving job content")
-        # Fix: Use job_record.job_id instead of job_id for consistency
-        job_content_record = dao.add_job_content(job_record.job_id, job_content_data)
+        job_content_record = dao.get_or_create_job_content(job_record.job_id, job_content_data)
 
-        # Save Formatted JD
-        # Process job content and save formatted JD
+        # 9. Process and save JD
         logger.info(f"Processing job description for job ID: {job_record.job_id}")
-        job_content = """job_content = "Job Title: Software Engineer Department: Technology &amp; Development Location: Remote / [Your Location] Employment Type: Full-Time Job Summary: We are seeking a highly motivated and skilled Software Engineer to join our dynamic development team. The successful candidate will be responsible for designing, developing, and implementing software solutions to address complex business challenges. This role involves working with cross-functional teams to define system requirements, troubleshoot issues, and deploy high-quality software. Responsibilities: Design, develop, test, and deploy high-quality software applications. Collaborate with product management, design, and other teams to understand requirements and deliver solutions. Perform code reviews and provide constructive feedback to peers. Write and maintain documentation for all software solutions. Troubleshoot and debug applications to optimize performance and functionality. Stay up-to-date with industry trends and technologies to improve skills and enhance software capabilities. Ensure application security, maintainability, and scalability are addressed in the design. Required Skills &amp; Qualifications: Bachelor&#39;s degree in Computer Science, Software Engineering, or related field. 3+ years of experience in software development. Proficiency in Python, JavaScript, and related frameworks (e.g., React, Django). Experience with RESTful API design and development. Knowledge of database systems like PostgreSQL, MySQL, or MongoDB. Familiarity with version control systems, especially Git. Strong analytical and problem-solving skills. Excellent communication and collaboration abilities. Preferred Qualifications: Experience with cloud platforms like AWS, Azure, or Google Cloud. Knowledge of containerization tools (e.g., Docker) and CI/CD pipelines. Familiarity with Agile and Scrum development methodologies. Benefits: Competitive salary and performance-based incentives. Flexible working hours and remote work options. Comprehensive health, dental, and vision insurance. Opportunities for professional growth and development. A collaborative and innovative work environment. We are committed to creating a diverse and inclusive workplace and encourage applications from candidates of all backgrounds. Any HTML included through the hosted job application editor will be automatically converted into corresponding HTML entities.&amp;lt;/p&amp;gt;"
-                            """
-        try:
-            analysis = processor.format_jd_with_gpt(job_content)
 
-            # Save processed JD
-            processed_jd_record = dao.add_processed_jd(
+        job_content = """Job Title: Senior Software Engineer Department: Technology &amp; Development Location: Remote / Hybrid (Bangalore, India) Employment Type: Full-Time Job Summary: We are seeking a highly motivated and skilled Senior Software Engineer to join our dynamic development team. The successful candidate will be responsible for designing, developing, and implementing software solutions to address complex business challenges. This role involves working with cross-functional teams to define system requirements, troubleshoot issues, and deploy high-quality software. Key Responsibilities: &amp;lt;ul&amp;gt;&amp;lt;li&amp;gt;Design, develop, test, and deploy high-quality software applications&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Lead technical design discussions and architecture planning&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Collaborate with product management and design teams&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Mentor junior developers and perform code reviews&amp;lt;/li&amp;gt;&amp;lt;/ul&amp;gt; Required Skills &amp; Qualifications: &amp;lt;ul&amp;gt;&amp;lt;li&amp;gt;Bachelor's degree in Computer Science or related field&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;5+ years of experience in software development&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Strong proficiency in Python, JavaScript, React, Django&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Experience with microservices and RESTful APIs&amp;lt;/li&amp;gt;&amp;lt;/ul&amp;gt; Benefits: Competitive salary (15-25 LPA), health insurance, flexible work hours. &amp;lt;p&amp;gt;Any HTML included through the hosted job application editor will be automatically converted into corresponding HTML entities.&amp;lt;/p&amp;gt;"""
+        try:
+            if not job_content:
+                raise ValueError("Empty job content")
+
+            analysis = processor.format_jd_with_gpt(job_content)
+            if not analysis:
+                raise ValueError("Failed to format job description with GPT")
+
+            processed_jd_record = dao.get_or_create_processed_jd(
                 job_record.job_id,
                 job_content_record.id,
                 analysis
             )
+            logger.info(f"Successfully processed and saved JD")
 
-            logger.info(f"Successfully processed and saved JD for job ID: {job_record.job_id}")
+            # # Use actual content from job_content_record
+            # if job_content_record and job_content_record.content:
+            #     analysis = processor.format_jd_with_gpt(job_content_record.content)
+            #     processed_jd_record = dao.get_or_create_processed_jd(
+            #         job_record.job_id,
+            #         job_content_record.id,
+            #         analysis
+            #     )
+            #     logger.info(f"Successfully processed and saved JD")
+            # else:
+            #     raise ValueError("No job content available")
 
         except Exception as e:
             logger.error(f"Failed to process or save JD: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error processing job description: {str(e)}")
 
-        # Save formatted Resume:
+        # 10. Process resume
+        processed_resume_record = None
         if resume_attachment:
             try:
-                logger.info(f"Processing resume for candidate ID: {candidate_record.candidate_id}")
-                # pdf_filename = resume_attachment.filename
-                pdf_filename = 'AnjaliDaya_2.4 years_Finance assocaite.pdf'
-                # result = processor.process_resume(resume_attachment.filename) # Process the resume fetch the filename from the webhook data
-
-                pdf_path = Path('C:/Users/AnishaChoudhury/Documents/Code/hr-automation/Resumes').joinpath(pdf_filename)
-                logger.info(f"Looking for file at path: {pdf_path}")
+                logger.info(f"Processing resume for candidate ID: {candidate_record.id}")
+                pdf_filename = 'AkshayRodi.pdf'  # Your test file
+                pdf_path = Path('./Resumes') / pdf_filename
 
                 if not os.path.exists(pdf_path):
                     logger.error(f"File not found: {pdf_path}")
-                    return False
-                
-                # Process the resume
-                result = processor.process_resume(pdf_filename)
-                if result["status"] == "success":
-                    logger.info(f"Resume processed successfully for candidate ID: {candidate_record.candidate_id}")
+                else:
+                    result = processor.process_resume(pdf_filename)
+                    if result["status"] == "success":
+                        logger.info("Resume processed successfully")
 
-                    # Update blob storage path using the DAO method
-                    dao.update_attachment_storage_path(
-                        attachment_id=resume_attachment.id,
-                        storage_path=result["blob_pdf_url"]
-                    )
-                    
-                    analysis = json.dumps(result["formatted_resume"])
+                        # Update blob storage path
+                        dao.update_attachment_storage_path(
+                            attachment_id=resume_attachment.id,
+                            storage_path=result["blob_pdf_url"]
+                        )
 
-                    # dao.update_candidate_from_resume(
-                    #     candidate_id=candidate_record.candidate_id,
-                    #     processed_resume=result["formatted_resume"]
-                    #     )
-                # Save processed resume
-                processed_resume_record = dao.add_processed_resume(
-                    candidate_id=candidate_record.candidate_id,
-                    attachment_id=resume_attachment.id,
-                    formatted_resume=analysis
-                )
-
-                logger.info(
-                    f"Successfully processed resume for candidate: {candidate_data['first_name']} {candidate_data['last_name']}")
+                        # Save processed resume
+                        processed_resume_record = dao.add_processed_resume(
+                            candidate_id=candidate_record.id,  # Using candidate.id
+                            attachment_id=resume_attachment.id,
+                            formatted_resume=json.dumps(result["formatted_resume"])
+                        )
 
             except Exception as e:
                 logger.error(f"Error processing resume: {str(e)}")
 
-        # SIMILARITY SCORE:
-        # After processing resume and JD
+        else:
+            logger.warning(f"No resume attachment found for candidate ID: {candidate_record.id}")
+
+        # 11. Calculate similarity score
         if processed_resume_record and processed_jd_record and application_record:
             try:
-                logger.info("Preparing resume data for similarity analysis")
-                # Convert JSON strings back to dictionaries if needed
+                logger.info("Calculating similarity scores")
+
+                # Convert JSON strings if needed
+
                 experience_section = (
-                    json.loads(processed_resume_record.experience_section) 
-                    if isinstance(processed_resume_record.experience_section, str) 
+                    json.loads(processed_resume_record.experience_section)
+                    if isinstance(processed_resume_record.experience_section, str)
                     else processed_resume_record.experience_section
                 )
+
                 skills_section = (
                     json.loads(processed_resume_record.skills_section)
                     if isinstance(processed_resume_record.skills_section, str)
@@ -280,9 +209,9 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
                     if isinstance(processed_resume_record.certifications, str)
                     else processed_resume_record.certifications
                 )
+                # ... Future [similar conversions for other sections]
 
-                # Generate similarity scores
-                similarity_analysis =  processor.generate_similarity_scores(
+                similarity_analysis = processor.generate_similarity_scores(
                     resume_text={
                         "experience": experience_section,
                         "skills": skills_section,
@@ -298,12 +227,10 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
                         "required_certifications": processed_jd_record.requiredCertifications
                     },
                     application_id=application_record.application_id
-
                 )
 
-                # Save similarity scores using DAO
                 similarity_score_record = dao.add_similarity_score(
-                    candidate_id=candidate_record.candidate_id,
+                    candidate_id=candidate_record.id,  # Using candidate.id
                     job_id=job_record.job_id,
                     application_id=application_record.application_id,
                     processed_resume_id=processed_resume_record.id,
@@ -311,29 +238,164 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
                     similarity_analysis=similarity_analysis
                 )
 
-                logger.info(
-                    f"Successfully processed similarity scores. Overall score: {similarity_score_record.overall_score}")
+                logger.info(f"Successfully calculated similarity score: {similarity_score_record.overall_score}")
 
             except Exception as e:
-                logger.error(f"Error processing similarity scores: {str(e)}")
-        logger.info(
-            f"Webhook processed successfully for candidate: {candidate_data['first_name']} {candidate_data['last_name']}")
+                logger.error(f"Error calculating similarity scores: {str(e)}")
 
         return JSONResponse(
             content={
-                "message": "Webhook received and processed",
-                "candidate_id": candidate_record.candidate_id,
-                "job_id": job_record.job_id,  # Changed from job_id to job_record.job_id
+                "message": "Webhook processed successfully",
+                "candidate_id": candidate_record.id,  # Using candidate.id
+                "job_id": job_record.job_id,
                 "application_id": application_record.application_id
             },
             status_code=200
         )
 
     except Exception as e:
-        logger.error("Error processing webhook: %s", str(e))
-        raise HTTPException(status_code=500, detail=str(e))  # Changed to include error message
+        logger.error(f"Error processing webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def verify_signature(secret_key: str, message_body: bytes, signature: str) -> bool:
     hash = hmac.new(secret_key.encode(), message_body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(hash, signature)
+
+
+@router.get("/jobs/{job_id}/resumes")
+async def get_resumes_by_job(
+        job_id: int,
+        sort_by: SortCriteria = Query(SortCriteria.overall_score, description="Sort criteria"),
+        limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
+        db: Session = Depends(get_db)
+):
+    try:
+        query = (
+            db.query(
+                Job.title.label('job_title'),
+                Candidate.id.label('id'),
+                Candidate.candidate_id.label('candidate_id'),
+                Candidate.first_name,
+                Candidate.last_name,
+                SimilarityScore.overall_score,
+                SimilarityScore.match_details,
+                ProcessedResume.company_bg_details
+            )
+            .join(SimilarityScore, Job.job_id == SimilarityScore.job_id)
+            .join(Candidate, SimilarityScore.candidate_id == Candidate.id)
+            .join(ProcessedResume, Candidate.id == ProcessedResume.candidate_id)
+            .filter(Job.job_id == job_id)
+        )
+
+        # Only sort by overall_score in database query
+        if sort_by == SortCriteria.overall_score:
+            query = query.order_by(desc(SimilarityScore.overall_score))
+
+        results = query.all()  # Get all results first
+
+        if not results:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No resumes found for job ID {job_id}"
+            )
+
+        formatted_results = []
+        for result in results:
+            try:
+                match_details = result.match_details
+                if isinstance(match_details, str):
+                    match_details = json.loads(match_details)
+
+                company_bg_details = result.company_bg_details
+                if isinstance(company_bg_details, str):
+                    company_bg_details = json.loads(company_bg_details)
+
+                # Find specific score based on sort criteria
+                specific_score = 0
+                if sort_by != SortCriteria.overall_score:
+                    score_type_map = {
+                        SortCriteria.skills_match: "Skills Match",
+                        SortCriteria.experience_match: "Experience Match",
+                        SortCriteria.education_match: "Education Match"
+                    }
+                    for detail in match_details:
+                        if detail.get('name') == score_type_map[sort_by]:
+                            specific_score = float(detail.get('score', 0))
+                            break
+
+                formatted_result = {
+                    "title": result.job_title,
+                    "id": result.id,
+                    "candidate_id": result.candidate_id,
+                    "candidate_name": f"{result.first_name} {result.last_name}".strip(),
+                    "overall_score": float(result.overall_score),
+                    "match_details": match_details,
+                    "company_bg_details": company_bg_details,
+                    "_sort_score": specific_score if sort_by != SortCriteria.overall_score else float(
+                        result.overall_score)
+                }
+                formatted_results.append(formatted_result)
+            except Exception as e:
+                logger.error(f"Error formatting result: {str(e)}")
+                continue
+
+        # Sort results based on criteria
+        if sort_by != SortCriteria.overall_score:
+            formatted_results.sort(key=lambda x: x['_sort_score'], reverse=True)
+
+        # Apply limit after sorting
+        formatted_results = formatted_results[:limit]
+
+        # Remove temporary sort score
+        for result in formatted_results:
+            del result['_sort_score']
+
+        return formatted_results
+
+    except Exception as e:
+        logger.error(f"Error fetching resumes for job {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching resumes: {str(e)}"
+        )
+
+
+@router.post("/jobs/{job_id}/query", response_model=List[ResumeResponse])
+async def query_resumes(
+        job_id: int,
+        query: str = Query(..., description="Natural language query"),
+        db: Session = Depends(get_db)
+):
+    """
+    Handle natural language queries about resumes
+    """
+    try:
+        # Parse query
+        if "top" in query.lower():
+            import re
+            numbers = re.findall(r'\d+', query)
+            limit = int(numbers[0]) if numbers else 10
+
+            # Determine sorting criteria
+            sort_by = SortCriteria.overall_score
+            if "skill" in query.lower():
+                sort_by = SortCriteria.skills_match
+            elif "experience" in query.lower():
+                sort_by = SortCriteria.experience_match
+            elif "education" in query.lower():
+                sort_by = SortCriteria.education_match
+
+            return await get_resumes_by_job(job_id, sort_by, limit, db)
+
+        raise HTTPException(
+            status_code=400,
+            detail="Could not understand query. Try: 'top 5 resumes by skills'"
+        )
+
+    except Exception as e:
+        logger.error(f"Error processing query for job {job_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing query: {str(e)}"
+        )

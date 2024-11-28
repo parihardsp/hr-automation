@@ -15,13 +15,13 @@ def generate_signature(secret_key: str, message_body: bytes) -> str:
 
 
 def send_webhook_request():
-    webhook_url = "http://127.0.0.1:8000/api/simulate_webhook"
+    webhook_url = "http://127.0.0.1:8000/api/simulate_webhook_v2"
 
     # Get the current directory of the script
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Build the path to the 'dummy_data_2.json' inside 'Dummy Data' folder
-    dummy_data_path = os.path.join(current_dir, 'Dummy Data', 'dummy_data_3.json')
+    dummy_data_path = os.path.join(current_dir, 'Dummy Data', 'dummy_data.json')
 
     try:
         with open(dummy_data_path, 'r') as f:
