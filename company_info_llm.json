@@ -1,31 +1,47 @@
 {
-    "Atos Syntel": {
+    "M/s Mukund M Chitale & Co., Mumbai": {
         "llm_matched_info": {
             "company_info": {
-                "Website": "https://www.atos-syntel.net/",
-                "description": "Atos Syntel is a division of Atos and a multinational provider of integrated technology and business services. It was created by the merger of Syntel, Inc. and Atos S.E. The company helps drive digital transformation for clients by modernizing and integrating their mainstream IT and deploying digital solutions at scale.",
-                "industry": "Information Technology and Services",
-                "Company size": "10001+ employees",
-                "Headquarters": "Bezons, France",
-                "type": "Public Company",
+                "Website": "http://mukundchitale.com/",
+                "description": "M/s Mukund M Chitale & Co. is a firm of Chartered Accountants based in Mumbai, India. The firm provides a wide range of accounting and financial services including statutory audits, internal audits, tax planning, and consultancy services to various corporate and non-corporate clients.",
+                "industry": "Accounting",
+                "Company size": "11-50 employees",
+                "Headquarters": "Mumbai, Maharashtra, India",
+                "type": "Partnership",
                 "key_products_services": [
-                    "IT Services",
-                    "Business Process Outsourcing",
-                    "Consulting",
-                    "Cloud Services",
-                    "Artificial Intelligence",
-                    "Cybersecurity",
-                    "Digital Transformation"
+                    "Statutory Audits",
+                    "Tax Planning",
+                    "Consultancy Services",
+                    "Internal Audits"
                 ],
-                "Founded": "2018",
+                "Founded": "1986",
                 "Specialties": [
-                    "IT Services",
-                    "Digital Transformation",
-                    "Business Process Outsourcing",
-                    "Consulting Services",
-                    "Cloud Services",
-                    "Artificial Intelligence",
-                    "Cybersecurity"
+                    "Taxation",
+                    "Audit",
+                    "Advisory"
+                ]
+            }
+        }
+    },
+    "S. N. Katdare & Co., Mumbai": {
+        "llm_matched_info": {
+            "company_info": {
+                "Website": "http://www.snkatdare.com/",
+                "description": "S. N. Katdare & Co. is an Indian Chartered Accountants firm based in Mumbai. They provide services in the field of Accountancy, Audits, Taxation, Consultancy and financial management.",
+                "industry": "Accounting",
+                "Company size": "1-10 employees",
+                "Headquarters": "Mumbai, Maharashtra, India",
+                "type": "Private",
+                "key_products_services": [
+                    "Accountancy",
+                    "Audits",
+                    "Taxation",
+                    "Consultancy",
+                    "Financial Management"
+                ],
+                "Founded": "1970",
+                "Specialties": [
+                    "Chartered Accountancy"
                 ]
             }
         }

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.database import engine
 from app.greenhouse_applications import models
 from app.greenhouse_applications.webhook_api import router as webhook_router
+from app.greenhouse_applications.jd_api import router as jd_router
 from app.core.logger_setup import setup_logger
 from app.core.config import settings
 
@@ -20,6 +21,7 @@ app = FastAPI()
 
 # Include the webhook router
 app.include_router(webhook_router, prefix="/api")
+app.include_router(jd_router, prefix="/api/v1")  # Add this line
 
 
 @app.get("/")

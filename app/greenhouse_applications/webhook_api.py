@@ -209,7 +209,7 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
             try:
                 logger.info(f"Processing resume for candidate ID: {candidate_record.candidate_id}")
                 # pdf_filename = resume_attachment.filename
-                pdf_filename = 'AnjaliDaya_2.4 years_Finance assocaite.pdf'
+                pdf_filename = 'AkshayRodi.pdf'
                 # result = processor.process_resume(resume_attachment.filename) # Process the resume fetch the filename from the webhook data
 
                 pdf_path = Path('C:/Users/AnishaChoudhury/Documents/Code/hr-automation/Resumes').joinpath(pdf_filename)
