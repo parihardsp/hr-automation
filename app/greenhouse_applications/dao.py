@@ -1,8 +1,9 @@
+"""Importing all the necessary libraries"""
 import json
 import logging
 from datetime import datetime
-from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional, List
+from sqlalchemy.orm import Session
 from .models import Candidate, CandidateAttachment, Job, Application, JobContent,  ProcessedJD, ProcessedResume, SimilarityScore
 
 logger = logging.getLogger(__name__)
@@ -18,15 +19,21 @@ class DAO:
             self.db.commit()
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error during {operation}: {str(e)}")
+            logger.error("Error during %s: %s", operation, str(e))
             raise
 
     def add_candidate(self, candidate_data: Dict[str, Any]) -> Candidate:
         """
-        Insert candidate data from webhook
+        Insert candidate data from webhook.
+
+        Args:
+            candidate_data: Dictionary containing candidate information.
+
+        Returns:
+            Candidate: The added candidate record.
         """
         try:
-            logger.info(f"Adding candidate: {candidate_data['first_name']} {candidate_data['last_name']}")
+            logger.info("Adding candidate: %s %s", candidate_data['first_name'], candidate_data['last_name'])
 
             # Check if candidate already exists
             existing_candidate = self.db.query(Candidate).filter(
@@ -34,7 +41,7 @@ class DAO:
             ).first()
 
             if existing_candidate:
-                logger.info(f"Candidate already exists with ID: {candidate_data['id']}")
+                logger.info("Candidate already exists with ID: %s", candidate_data['id'])
                 return existing_candidate
 
             candidate = Candidate(
@@ -56,12 +63,12 @@ class DAO:
 
             self.db.add(candidate)
             self.db.flush()
-            logger.info(f"Successfully added candidate with ID: {candidate.candidate_id}")
+            logger.info("Successfully added candidate with ID: %s", candidate.candidate_id)
             return candidate
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error adding candidate: {str(e)}")
+            logger.error("Error adding candidate: %s", str(e))
             raise Exception(f"Error adding candidate: {str(e)}")
         
     def update_candidate_from_resume(self, candidate_id: int, processed_resume: Dict[str, Any]) -> Candidate:
@@ -76,7 +83,7 @@ class DAO:
             Candidate: Updated candidate record
         """
         try:
-            logger.info(f"Updating candidate {candidate_id} with processed resume data")
+            logger.info("Updating candidate %d with processed resume data", candidate_id)
 
             # Get existing candidate
             candidate = self.db.query(Candidate).filter(
@@ -94,16 +101,12 @@ class DAO:
                 name_parts = personal_info['name'].split(maxsplit=1)
                 candidate.first_name = name_parts[0]
                 candidate.last_name = name_parts[1] if len(name_parts) > 1 else ''
-                
             if personal_info.get('email'):
                 candidate.email_addresses = [personal_info['email']]
-                
             if personal_info.get('phone'):
                 candidate.phone_numbers = [personal_info['phone']]
-                
             if personal_info.get('location'):
                 candidate.addresses = [personal_info['location']]
-                
             # Update professional information
             work_experience = processed_resume.get('workExperience', [])
             if work_experience:
@@ -134,7 +137,6 @@ class DAO:
             all_skills.extend(skills.get('languages', []))
             if all_skills:
                 candidate.tags = all_skills
-            
             custom_fields = {}
             # Get existing custom_fields if any
             if candidate.custom_fields:
@@ -149,19 +151,20 @@ class DAO:
             if company_background:
                 custom_fields['company_background'] = company_background
             
-            logger.info(f"Previous custom_fields: {candidate.custom_fields}")
-            logger.info(f"New custom_fields: {custom_fields}")
+            logger.info("Previous custom_fields: %s", candidate.custom_fields)
+            logger.info("New custom_fields: %s", custom_fields)
             candidate.custom_fields = custom_fields
             candidate.updated_at = datetime.utcnow()
 
             self.db.commit()
-            logger.info(f"Successfully updated candidate {candidate_id} with resume data")
-            logger.info(f"Final custom_fields: {candidate.custom_fields}")
+            logger.info("Successfully updated candidate %d with resume data", candidate_id)
+            logger.info("Final custom_fields: %s", candidate.custom_fields)
+
             return candidate
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error updating candidate from resume: {str(e)}")
+            logger.error("Error updating candidate from resume: %s", str(e))
             raise Exception(f"Error updating candidate from resume: {str(e)}")
 
     def add_candidate_attachment(self, candidate_id: int, attachment_data: Dict[str, Any]) -> CandidateAttachment:
@@ -170,7 +173,7 @@ class DAO:
         blob_storage_path will be updated later when file is downloaded and stored
         """
         try:
-            logger.info(f"Adding attachment for candidate ID: {candidate_id}")
+            logger.info("Adding attachment for candidate ID: %d", candidate_id)
 
             # Check if attachment already exists
             existing_attachment = self.db.query(CandidateAttachment).filter(
@@ -179,7 +182,7 @@ class DAO:
             ).first()
 
             if existing_attachment:
-                logger.info(f"Attachment already exists for candidate ID: {candidate_id}")
+                logger.info("Attachment already exists for candidate ID: %d", candidate_id)
                 return existing_attachment
 
             attachment = CandidateAttachment(
@@ -193,12 +196,12 @@ class DAO:
 
             self.db.add(attachment)
             self.db.flush()
-            logger.info(f"Successfully added attachment for candidate ID: {candidate_id}")
+            logger.info("Successfully added attachment for candidate ID: %d",candidate_id)
             return attachment
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error adding attachment: {str(e)}")
+            logger.error("Error adding attachment: %s", str(e))
             raise Exception(f"Error adding attachment: {str(e)}")
 
     def update_attachment_storage_path(self, attachment_id: int, storage_path: str) -> CandidateAttachment:
@@ -207,7 +210,7 @@ class DAO:
         This method can be used later when implementing file download functionality.
         """
         try:
-            logger.info(f"Updating storage path for attachment ID: {attachment_id}")
+            logger.info("Updating storage path for attachment ID: %d",attachment_id)
 
             attachment = self.db.query(CandidateAttachment).filter(
                 CandidateAttachment.id == attachment_id
@@ -220,12 +223,12 @@ class DAO:
             attachment.status = 'downloaded'  # Update status when path is set
             self.db.commit()
 
-            logger.info(f"Successfully updated storage path for attachment ID: {attachment_id}")
+            logger.info("Successfully updated storage path for attachment ID: %d", attachment_id)
             return attachment
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error updating attachment storage path: {str(e)}")
+            logger.error("Error updating attachment storage path: %s", str(e))
             raise Exception(f"Error updating attachment storage path: {str(e)}")
 
     def add_job(self, job_data: Dict[str, Any]) -> Job:
@@ -233,7 +236,7 @@ class DAO:
         Insert basic job data from webhook
         """
         try:
-            logger.info(f"Adding job with ID: {job_data['id']}")
+            logger.info("Adding job with ID: %s", job_data['id'])
 
             # Check if job already exists
             existing_job = self.db.query(Job).filter(
@@ -241,7 +244,7 @@ class DAO:
             ).first()
 
             if existing_job:
-                logger.info(f"Job already exists with ID: {job_data['id']}")
+                logger.info("Job already exists with ID: %s", job_data['id'])
                 return existing_job
 
             job = Job(
@@ -256,20 +259,21 @@ class DAO:
 
             self.db.add(job)
             self.db.flush()
-            logger.info(f"Successfully added job with ID: {job.job_id}")
+            logger.info("Successfully added job with ID: %s", job.job_id)
             return job
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error adding job: {str(e)}")
+            logger.error("Error adding job: %s", str(e))
             raise Exception(f"Error adding job: {str(e)}")
+
 
     def add_application(self, application_data: Dict[str, Any], candidate_id: int, job_id: int) -> Application:
         """
         Insert application data
         """
         try:
-            logger.info(f"Adding application for candidate ID: {candidate_id} and job ID: {job_id}")
+            logger.info("Adding application for candidate ID: %d and job ID: %d", candidate_id, job_id)
 
             # Check if application already exists
             existing_application = self.db.query(Application).filter(
@@ -277,7 +281,7 @@ class DAO:
             ).first()
 
             if existing_application:
-                logger.info(f"Application already exists with ID: {application_data['id']}")
+                logger.info("Application already exists with ID: %s", application_data['id'])
                 return existing_application
 
             application = Application(
@@ -295,20 +299,20 @@ class DAO:
 
             self.db.add(application)
             self._commit_with_rollback("adding application")
-            logger.info(f"Successfully added application with ID: {application.application_id}")
+            logger.info("Successfully added application with ID: %s", application.application_id)
             return application
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error adding application: {str(e)}")
+            logger.error("Error adding application: %s", str(e))
             raise Exception(f"Error adding application: {str(e)}")
-
+            
     def add_job_content(self, job_id: int, content_data: dict) -> JobContent:
         """
         Insert job content data from Greenhouse API
         """
         try:
-            logger.info(f"Adding/updating job content for job ID: {job_id}")
+            logger.info("Adding/updating job content for job ID: %d", job_id)
 
             # Convert pay range data to our format
             pay_range = None
@@ -328,7 +332,7 @@ class DAO:
             ).first()
 
             if existing_content:
-                logger.info(f"Updating existing job content for job ID: {job_id}")
+                logger.info("Updating existing job content for job ID: %d", job_id)
                 existing_content.internal_job_id = content_data['internal_job_id']
                 existing_content.title = content_data['title']
                 existing_content.content = content_data['content']
@@ -340,7 +344,7 @@ class DAO:
                 self._commit_with_rollback("updating job content")
                 return existing_content
 
-            logger.info(f"Creating new job content for job ID: {job_id}")
+            logger.info("Creating new job content for job ID: %d", job_id)
             job_content = JobContent(
                 job_id=job_id,
                 internal_job_id=content_data['internal_job_id'],
@@ -354,12 +358,12 @@ class DAO:
 
             self.db.add(job_content)
             self._commit_with_rollback("adding job content")
-            logger.info(f"Successfully added job content for job ID: {job_id}")
+            logger.info("Successfully added job content for job ID: %d", job_id)
             return job_content
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error adding job content: {str(e)}")
+            logger.error("Error adding job content: %s", str(e))
             raise Exception(f"Error adding job content: {str(e)}")
         
     def get_application_by_id(self, application_id: int) -> Optional[Application]:
@@ -367,20 +371,20 @@ class DAO:
         Get application by application_id
         """
         try:
-            logger.info(f"Checking for existing application with ID: {application_id}")
+            logger.info("Checking for existing application with ID: %d", application_id)
             application = self.db.query(Application).filter(
                 Application.application_id == application_id
             ).first()
 
             if application:
-                logger.info(f"Found existing application with ID: {application_id}")
+                logger.info("Found existing application with ID: %d", application_id)
             else:
-                logger.info(f"No existing application found with ID: {application_id}")
+                logger.info("No existing application found with ID: %d", application_id)
 
             return application
 
         except Exception as e:
-            logger.error(f"Error checking application existence: {str(e)}")
+            logger.error("Error checking application existence: %s", str(e))
             raise Exception(f"Error checking application existence: {str(e)}")
 
     def get_job_content(self, job_id: int) -> Optional[JobContent]:
@@ -388,15 +392,15 @@ class DAO:
         Get job content by job_id
         """
         try:
-            logger.info(f"Fetching job content for job ID: {job_id}")
+            logger.info("Fetching job content for job ID: %d", job_id)
             content = self.db.query(JobContent).filter(JobContent.job_id == job_id).first()
             if content:
-                logger.info(f"Found job content for job ID: {job_id}")
+                logger.info("Found job content for job ID: %d", job_id)
             else:
-                logger.info(f"No job content found for job ID: {job_id}")
+                logger.info("No job content found for job ID: %d", job_id)
             return content
         except Exception as e:
-            logger.error(f"Error fetching job content: {str(e)}")
+            logger.error("Error fetching job content: %s", str(e))
             raise Exception(f"Error fetching job content: {str(e)}")
 
     def get_job_by_job_id(self, job_id: int) -> Optional[Job]:
@@ -404,15 +408,15 @@ class DAO:
         Get job by greenhouse job_id
         """
         try:
-            logger.info(f"Fetching job with job ID: {job_id}")
+            logger.info("Fetching job with job ID: %d", job_id)
             job = self.db.query(Job).filter(Job.job_id == job_id).first()
             if job:
-                logger.info(f"Found job with job ID: {job_id}")
+                logger.info("Found job with job ID: %d", job_id)
             else:
-                logger.info(f"No job found with job ID: {job_id}")
+                logger.info("No job found with job ID: %d", job_id)
             return job
         except Exception as e:
-            logger.error(f"Error fetching job: {str(e)}")
+            logger.error("Error fetching job: %s", str(e))
             raise Exception(f"Error fetching job: {str(e)}")
 
     def get_top_resumes_for_job(self, job_id: int) -> List[SimilarityScore]:
@@ -426,7 +430,7 @@ class DAO:
             List[SimilarityScore]: A list of the top 10 SimilarityScore records for the given job ID.
         """
         try:
-            logger.info(f"Fetching top 10 resumes for job ID: {job_id}")
+            logger.info("Fetching top 10 resumes for job ID: %d", job_id)
             top_resumes = self.db.query(SimilarityScore) \
                 .filter(SimilarityScore.job_id == job_id) \
                 .order_by(SimilarityScore.overall_score.desc()) \
@@ -436,7 +440,7 @@ class DAO:
             return top_resumes
 
         except Exception as e:
-            logger.error(f"Error fetching top resumes for job ID {job_id}: {str(e)}")
+            logger.error("Error fetching top resumes for job ID %d: %s", job_id, str(e))
             raise Exception(f"Error fetching top resumes for job ID {job_id}: {str(e)}")
 
     def get_candidate_by_id(self, candidate_id: int) -> Candidate:
@@ -450,18 +454,19 @@ class DAO:
             Candidate: The Candidate record with the given ID.
         """
         try:
-            logger.info(f"Fetching candidate with ID: {candidate_id}")
+            logger.info("Fetching candidate with ID: %d", candidate_id)
             candidate = self.db.query(Candidate).filter(Candidate.candidate_id == candidate_id).first()
 
             if not candidate:
-                logger.info(f"No candidate found with ID: {candidate_id}")
+                logger.info("No candidate found with ID: %d", candidate_id)
                 raise Exception(f"No candidate found with ID: {candidate_id}")
 
             return candidate
 
         except Exception as e:
-            logger.error(f"Error fetching candidate with ID {candidate_id}: {str(e)}")
+            logger.error("Error fetching candidate with ID %d: %s", candidate_id, str(e))
             raise Exception(f"Error fetching candidate with ID {candidate_id}: {str(e)}")
+
     def add_processed_jd(self, job_id: int, job_content_id: int, formatted_jd: str) -> ProcessedJD:
         """
         Insert processed job description data
@@ -475,7 +480,7 @@ class DAO:
             ProcessedJD: The created or updated processed JD record
         """
         try:
-            logger.info(f"Adding processed JD for job ID: {job_id}")
+            logger.info("Adding processed JD for job ID:%d",job_id)
 
             # Clean and parse the JSON string
             cleaned_jd = formatted_jd.strip("```json").strip("```").strip()
@@ -488,7 +493,7 @@ class DAO:
             ).first()
 
             if existing_processed_jd:
-                logger.info(f"Updating existing processed JD for job ID: {job_id}")
+                logger.info("Updating existing processed JD for job ID:%d",job_id)
                 existing_processed_jd.required_experience = formatted_jd_dict.get('requiredWorkExperience')
                 existing_processed_jd.required_skills = formatted_jd_dict.get('requiredSkills')
                 existing_processed_jd.roles_responsibilities = formatted_jd_dict.get('rolesAndResponsibilities')
@@ -513,7 +518,7 @@ class DAO:
 
             self.db.add(processed_jd)
             self._commit_with_rollback("adding processed JD")
-            logger.info(f"Successfully added processed JD for job ID: {job_id}")
+            logger.info("Successfully added processed JD for job ID:%d",job_id)
             return processed_jd
 
         except json.JSONDecodeError as e:
@@ -537,7 +542,7 @@ class DAO:
             ProcessedResume: The created or updated processed resume record
         """
         try:
-            logger.info(f"Adding processed resume for candidate ID: {candidate_id}, attachment ID: {attachment_id}")
+            logger.info("Adding processed resume for candidate ID: %d, attachment ID: %d", candidate_id, attachment_id)
 
             # Clean and parse the JSON string
             # cleaned_resume = formatted_resume.strip("```json").strip("```").strip()
@@ -550,7 +555,7 @@ class DAO:
             ).first()
 
             if existing_processed_resume:
-                logger.info(f"Updating existing processed resume for candidate ID: {candidate_id}")
+                logger.info("Updating existing processed resume for candidate ID:%d",candidate_id)
                 existing_processed_resume.personal_section = formatted_resume_dict.get('personalInfo')
                 existing_processed_resume.experience_section = formatted_resume_dict.get('workExperience')
                 existing_processed_resume.skills_section = formatted_resume_dict.get('skills')
@@ -579,11 +584,11 @@ class DAO:
 
             self.db.add(processed_resume)
             self._commit_with_rollback("adding processed resume")
-            logger.info(f"Successfully added processed resume for candidate ID: {candidate_id}")
+            logger.info("Successfully added processed resume for candidate ID: %d",candidate_id)
             return processed_resume
 
         except json.JSONDecodeError as e:
-            logger.error(f"Error decoding JSON for candidate ID {candidate_id}: {str(e)}")
+            logger.error("Error decoding JSON for candidate ID %d: %s", candidate_id, str(e))
             # Update status to failed in case of JSON error
             if 'processed_resume' in locals():
                 processed_resume.processing_status = 'failed'
@@ -591,7 +596,7 @@ class DAO:
             raise Exception(f"Invalid JSON format in formatted resume: {str(e)}")
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error adding processed resume: {str(e)}")
+            logger.error("Error adding processed resume: %s", str(e))
             # Update status to failed in case of any other error
             if 'processed_resume' in locals():
                 processed_resume.processing_status = 'failed'
@@ -619,7 +624,7 @@ class DAO:
             similarity_analysis: Dict containing overall score and detailed section analysis
         """
         try:
-            logger.info(f"Adding similarity score for application ID: {application_id}")
+            logger.info("Adding similarity score for application ID:%d",application_id)
 
             # Check if similarity score already exists
             existing_score = self.db.query(SimilarityScore).filter(
@@ -627,7 +632,7 @@ class DAO:
             ).first()
 
             if existing_score:
-                logger.info(f"Updating existing similarity score for application ID: {application_id}")
+                logger.info("Updating existing similarity score for application ID:%d",application_id)
                 existing_score.overall_score = similarity_analysis['matching_score']
                 existing_score.match_details = similarity_analysis['sections']
                 existing_score.updated_at = datetime.utcnow()
@@ -648,10 +653,10 @@ class DAO:
 
             self.db.add(new_score)
             self._commit_with_rollback("adding similarity score")
-            logger.info(f"Successfully added similarity score for application ID: {application_id}")
+            logger.info("Successfully added similarity score for application ID:%d",application_id)
             return new_score
 
         except Exception as e:
             self.db.rollback()
-            logger.error(f"Error adding similarity score: {str(e)}")
+            logger.error("Error adding similarity score: %s", str(e))
             raise Exception(f"Error adding similarity score: {str(e)}")

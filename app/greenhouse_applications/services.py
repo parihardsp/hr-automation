@@ -1,13 +1,17 @@
+#pylint: disable=C0303 
+#pylint: disable=C0301
+#pylint: disable=W0718
+"""Importing all the necessary libraries"""
 import os
 import io
+from pathlib import Path
+from typing import Dict, Any, Tuple
+from datetime import datetime, timedelta
 import json
 import openai
 import PyPDF2
 import requests
-from pathlib import Path
-from typing import Dict, Any
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 from app.core.logger_setup import setup_logger
 from azure.storage.blob import BlobServiceClient, BlobSasPermissions, generate_blob_sas
 
@@ -26,8 +30,10 @@ deployment_name = "gpt-4-32k"
 openai.api_type = "azure"
 
 class CandidateJobEvaluator:
+    """Evaluates the Candidate."""
     def __init__(self):
-        self.blob_service_client = BlobServiceClient(account_url=account_url, credential=account_key)
+        self.blob_service_client = BlobServiceClient(account_url=account_url,
+        credential=account_key)
         self.formatted_resume = None
         # Add default JD data as class attribute
         self.jd_data = {
@@ -59,11 +65,18 @@ class CandidateJobEvaluator:
                 }
             ]
         }
-        logger.info(f"BlobServiceClient initialized for account: {account_name}")
+        logger.info("BlobServiceClient initialized for account: %s", account_name)
 
     def generate_sas_token(self, container_name: str, blob_name: str) -> str:
         """
         Generate a SAS (Shared Access Signature) token for a specific blob.
+
+        Args:
+            container_name: The name of the container.
+            blob_name: The name of the blob.
+
+        Returns:
+            str: The generated SAS token.
         """
         try:
             sas_token = generate_blob_sas(
@@ -74,23 +87,29 @@ class CandidateJobEvaluator:
                 permission=BlobSasPermissions(read=True, write=True),
                 expiry=datetime.utcnow() + timedelta(hours=0.166667)
             )
-            logger.info(f"SAS token generated successfully: {sas_token}")
+            logger.info("SAS token generated successfully: %s", sas_token)
             return sas_token
         except Exception as e:
-            logger.error(f"Error generating SAS token: {e}")
+            logger.error("Error generating SAS token: %s", str(e))
             raise
 
-    def upload_pdf_to_blob(self, pdf_filename: str) -> bool:
+    def upload_pdf_to_blob(self, pdf_filename: str) -> Tuple[bool, str]:
         """
         Upload a PDF file to Azure Blob Storage.
+
+        Args:
+            pdf_filename: The name of the PDF file to upload.
+
+        Returns:
+            Tuple[bool, str]: A tuple containing a boolean indicating success and the blob path.
         """
         try:
-            pdf_path = Path('C:/Users/AnishaChoudhury/Documents/Code/hr-automation/Resumes').joinpath(pdf_filename)
-            logger.info(f"Looking for file at path: {pdf_path}")
+            pdf_path = Path('/Users/maitreekatiyar/Desktop/Agilysis_Projects/hr-automation/Resumes').joinpath(pdf_filename)
+            logger.info("Looking for file at path: %s", pdf_path)
 
             if not os.path.exists(pdf_path):
-                logger.error(f"File not found: {pdf_path}")
-                return False
+                logger.error("File not found: %s", pdf_path)
+                return False, ""
 
             sas_token = self.generate_sas_token(container_name, pdf_filename)
             blob_url = f"{account_url}/{container_name}/{pdf_filename}?{sas_token}"
@@ -105,73 +124,83 @@ class CandidateJobEvaluator:
                 response = requests.put(blob_url, data=data, headers=headers)
 
                 if response.status_code == 201:
-                    logger.info(f"Successfully uploaded blob: {pdf_filename}")
+                    logger.info("Successfully uploaded blob: %s", pdf_filename)
                     return True, blob_pdf_path
                 else:
-                    logger.error(f"Failed to upload blob: {pdf_filename}. Status code: {response.status_code}")
-                    return False
+                    logger.error("Failed to upload blob: %s. Status code: %d", pdf_filename, response.status_code)
+                    return False, ""
 
         except Exception as e:
-            logger.error(f"Error uploading blob: {str(e)}")
-            return False
+            logger.error("Error uploading blob: %s", str(e))
+            return False, ""
 
-    
-    def extract_text_from_pdf(self, pdf_content):
-      """Extract text from a PDF file content."""
-      print('inside extract_text_from_pdf')
-      text = ""
-      try:
-        # Create a PDF file object from bytes
-        pdf_file = io.BytesIO(pdf_content)
-        # Create PDF reader object
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
-        
-        # Extract text from each page
-        for page in pdf_reader.pages:
-            text += page.extract_text() + "\n"
-        # print(text)
-        
-              
-      except Exception as e:
-          raise Exception(f"Error extracting text from PDF: {str(e)}")
-      
-      return text
-    
-    def get_latest_blob_with_sas(self) -> tuple[str, str, str]:
+    def extract_text_from_pdf(self, pdf_content: bytes) -> str:
+        """
+        Extract text from a PDF file content.
+
+        Args:
+            pdf_content: The content of the PDF file.
+
+        Returns:
+            str: The extracted text.
+        """
+        text = ""
+        try:
+            # Create a PDF file object from bytes
+            pdf_file = io.BytesIO(pdf_content)
+            # Create PDF reader object
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+
+            # Extract text from each page
+            for page in pdf_reader.pages:
+                text += page.extract_text() + "\n"
+
+        except Exception as e:
+            logger.error("Error extracting text from PDF: %s", str(e))
+            raise Exception(f"Error extracting text from PDF: {str(e)}")
+
+        return text
+
+    def get_latest_blob_with_sas(self) -> Tuple[str, str, str]:
         """
         Get the latest blob from the container with its SAS token.
+
+        Returns:
+            Tuple[str, str, str]: A tuple containing the blob name, blob URL, and extracted text.
         """
         try:
             container_client = self.blob_service_client.get_container_client(container_name)
             blobs = list(container_client.list_blobs())
-            
+
             if not blobs:
                 logger.error("No blobs found in container")
                 raise Exception("No blobs found in container")
 
             latest_blob = max(blobs, key=lambda x: x.last_modified)
             latest_blob_name = latest_blob.name
-            
-            logger.info(f"Latest blob found: {latest_blob_name}, Last modified: {latest_blob.last_modified}")
-            
+
+            logger.info("Latest blob found: %s, Last modified: %s",
+latest_blob_name, latest_blob.last_modified)
+
             sas_token = self.generate_sas_token(container_name, latest_blob_name)
             blob_url = f"{account_url}/{container_name}/{latest_blob_name}?{sas_token}"
 
             response = requests.get(blob_url)
             if response.status_code != 200:
                 raise Exception(f"Failed to download blob: {response.status_code}")
-            
+
             # Extract text from PDF
             extracted_text = self.extract_text_from_pdf(response.content)
-            # print(f'get_latest_blob_with_sas:{extracted_text}')
-            
+
             return latest_blob_name, blob_url, extracted_text
-                
+
         except Exception as e:
-            logger.error(f"Error getting latest blob with SAS: {str(e)}")
+            logger.error("Error getting latest blob with SAS: %s", str(e))
             raise
 
+
     def format_jd_with_gpt(self, jd_text):
+        """ formatting the JD with GPT"""
         prompt = f"""
         You are a powerful AI that helps reformat job descriptions (JDs) into a structured JSON format. Below is the template you need to follow:
 
@@ -232,96 +261,92 @@ class CandidateJobEvaluator:
         return analysis
 
     def format_resume_with_gpt(self, resume_text: str) -> Dict[str, Any]:
-      """
-      Format resume text using GPT-4 into structured JSON
-      """
-      resume_text = resume_text.encode('utf-8', errors='ignore').decode('utf-8')
 
-      system_message = """You are an AI that reformats resumes into structured JSON. 
-      Extract all relevant information and return ONLY valid JSON without any additional text or explanation.
-      Ensure the response can be parsed by json.loads(). Include all available skills, work experience, and education details."""
+        """Format resume text using GPT-4 into structured JSON"""
+        resume_text = resume_text.encode('utf-8', errors='ignore').decode('utf-8')
 
-      prompt = f"""Please format the following resume into valid JSON using this exact structure:
-      ```json
-      {{
-          "personalInfo": {{
-              "name": "",
-              "location": "",
-              "email": "",
-              "phone": "",
-              "linkedIn": ""
-          }},
-          "education": [
-              {{
-                  "degree": "",
-                  "field": "",
-                  "institution": "",
-                  "graduationYear": "",
-                  "gpa": ""
-              }}
-          ],
-          "workExperience": [
-              {{
-                  "companyName": "",
-                  "position": "",
-                  "duration": "",
-                  "responsibilities": [""],
-                  "achievements": [""]
-              }}
-          ],
-          "skills": {{
-              "technical": [""],
-              "soft": [""],
-              "languages": [""]
-          }},
-          "certifications": [
-              {{
-                  "name": "",
-                  "issuingOrganization": "",
-                  "issueDate": "",
-                  "expiryDate": ""
-              }}
-          ],
-          "projects": [
-              {{
-                  "name": "",
-                  "description": "",
-                  "technologies": [""],
-                  "link": ""
-              }}
-          ]
-      }}
-      ```
-      Resume text:
-      {resume_text}
-      """
-      try:
-          response = openai.ChatCompletion.create(
-              engine=deployment_name,
-              messages=[
-                  {"role": "system", "content": system_message},
-                  {"role": "user", "content": prompt}
-              ],
-              max_tokens=2000,
-              temperature=0.7
-          )
+        system_message = """You are an AI that reformats resumes into structured JSON. 
+        Extract all relevant information and return ONLY valid JSON without any additional text or explanation.
+        Ensure the response can be parsed by json.loads(). Include all available skills, work experience, and education details."""
 
-          response_text = response.choices[0].message.content.strip()          
-          try:
-              parsed_json = json.loads(response_text)
-            #   parsed_json["processing_status"] = "COMPLETED"
-            #   self.formatted_resume = parsed_json
-              return parsed_json
-          except json.JSONDecodeError as e:
-              
-              logger.error(f"Error parsing GPT response as JSON: {e}")
-              logger.error(f"Raw response: {response_text}")
-              return None
+        prompt = f"""Please format the following resume into valid JSON using this exact structure:
+        ```json
+        {{
+            "personalInfo": {{
+                "name": "",
+                "location": "",
+                "email": "",
+                "phone": "",
+                "linkedIn": ""
+            }},
+            "education": [
+                {{
+                    "degree": "",
+                    "field": "",
+                    "institution": "",
+                    "graduationYear": "",
+                    "gpa": ""
+                }}
+            ],
+            "workExperience": [
+                {{
+                    "companyName": "",
+                    "position": "",
+                    "duration": "",
+                    "responsibilities": [""],
+                    "achievements": [""]
+                }}
+            ],
+            "skills": {{
+                "technical": [""],
+                "soft": [""],
+                "languages": [""]
+            }},
+            "certifications": [
+                {{
+                    "name": "",
+                    "issuingOrganization": "",
+                    "issueDate": "",
+                    "expiryDate": ""
+                }}
+            ],
+            "projects": [
+                {{
+                    "name": "",
+                    "description": "",
+                    "technologies": [""],
+                    "link": ""
+                }}
+            ]
+        }}
+        ```
+        Resume text:
+        {resume_text}
+        """
+        try:
+            response = openai.ChatCompletion.create(
+                engine=deployment_name,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=2000,
+                temperature=0.7
+            )
 
-      except Exception as e:
-          logger.error(f"Error in GPT API call: {e}")
-          return None
-      
+            response_text = response.choices[0].message.content.strip()
+            try:
+                parsed_json = json.loads(response_text)
+                return parsed_json
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing GPT response as JSON: {e}")
+                logger.error(f"Raw response: {response_text}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Error in GPT API call: {e}")
+            return None
+     
     def get_company_info_with_llm(self, company_name: str) -> Dict[str, Any]:
         """
         Use GPT to identify and provide information about a company.
@@ -442,7 +467,6 @@ class CandidateJobEvaluator:
             logger.error(f"Error in getting companies info: {str(e)}")
             return {"error": str(e)}
         
-
     def generate_similarity_scores(
         self,
         resume_text: Dict[str, Any],
@@ -552,7 +576,7 @@ class CandidateJobEvaluator:
             latest_blob_name, blob_url, extracted_text = self.get_latest_blob_with_sas()
             formatted_resume = self.format_resume_with_gpt(extracted_text)
             if formatted_resume is None:
-              raise Exception("Failed to format resume with GPT")
+                raise Exception("Failed to format resume with GPT")
             self.formatted_resume = formatted_resume
             company_info = self.get_companies_info()
             if company_info:

@@ -3,28 +3,27 @@
         "llm_matched_info": {
             "company_info": {
                 "Website": "https://www.atos-syntel.net/",
-                "description": "Atos Syntel is a division of Atos and a multinational provider of integrated technology and business services. It was created by the merger of Syntel, Inc. and Atos S.E. The company helps drive digital transformation for clients by modernizing and integrating their mainstream IT and deploying digital solutions at scale.",
+                "description": "Atos Syntel is a division of Atos and a multinational provider of integrated technology and business services. The company is led by Rakesh Khanna. Atos Syntel was created by the merger of Syntel, Inc. and Atos S.E., which was announced on July 22, 2018 and completed on October 9, 2018.",
                 "industry": "Information Technology and Services",
-                "Company size": "10001+ employees",
-                "Headquarters": "Bezons, France",
+                "Company size": "10,001+ employees",
+                "Headquarters": "Bezons, Ile-de-France, France",
                 "type": "Public Company",
                 "key_products_services": [
+                    "IT Consulting",
                     "IT Services",
                     "Business Process Outsourcing",
-                    "Consulting",
+                    "Digital Transformation",
                     "Cloud Services",
-                    "Artificial Intelligence",
-                    "Cybersecurity",
-                    "Digital Transformation"
+                    "Cybersecurity Services",
+                    "Big Data",
+                    "Artificial Intelligence"
                 ],
                 "Founded": "2018",
                 "Specialties": [
                     "IT Services",
                     "Digital Transformation",
-                    "Business Process Outsourcing",
-                    "Consulting Services",
+                    "BPO Services",
                     "Cloud Services",
-                    "Artificial Intelligence",
                     "Cybersecurity"
                 ]
             }
