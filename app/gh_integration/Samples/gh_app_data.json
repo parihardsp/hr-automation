@@ -2,7 +2,7 @@
   "action": "new_candidate_application",
   "payload": {
     "application": {
-      "id": 71980812,
+      "id": 71980829,
       "rejected_at": null,
       "prospect": false,
       "status": "active",
@@ -65,7 +65,7 @@
         }
       },
       "candidate": {
-        "id": 60304594,
+        "id": 60304597,
         "first_name": "Jane",
         "last_name": "Smith",
         "title": "Manager",

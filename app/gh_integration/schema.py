@@ -147,6 +147,7 @@ class SortCriteria(str, Enum):
     experience_match = "experience_match"
     education_match = "education_match"
 
+
 class ResumeResponse(BaseModel):
     title: str
     id: int

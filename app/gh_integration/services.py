@@ -1,3 +1,9 @@
+#pylint: disable=C0303
+#pylint: disable=C0301
+#pylint: disable=W0718
+
+"""Importing all the necessary libraries"""
+
 import os
 import io
 import json
@@ -6,60 +12,36 @@ import PyPDF2
 import requests
 from pathlib import Path
 from typing import Dict, Any
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from app.core.logger_setup import setup_logger
 from azure.storage.blob import BlobServiceClient, BlobSasPermissions, generate_blob_sas
+from app.core.config import settings
 
-logger = setup_logger()
-load_dotenv()
+# Setup Logger
+logger = setup_logger(__name__)
 
-# Fetch environment variables
-account_name = os.getenv('ACCOUNT_NAME')
-container_name = os.getenv('CONTAINER_NAME')
-account_key = os.getenv('account_key')
-account_url = f"https://{account_name}.blob.core.windows.net"
-openai.api_key = os.getenv('BC_OPENAI_API_KEY')
-openai.api_base = os.getenv('BASE_URL')
-openai.api_version = "2023-03-15-preview"
-deployment_name = "gpt-4-32k"
-openai.api_type = "azure"
+# Configure OpenAI settings
+openai.api_key = settings.OPENAI_API_KEY
+openai.api_base = settings.OPENAI_API_BASE
+openai.api_version = settings.OPENAI_API_VERSION
+openai.api_type = settings.OPENAI_API_TYPE
 
+# Configure Azure Blob Storage settings
+account_name = settings.ACCOUNT_NAME
+container_name = settings.CONTAINER_NAME
+account_key = settings.ACCOUNT_KEY
+account_url = settings.BLOB_ACCOUNT_URL
+deployment_name = settings.OPENAI_DEPLOYMENT_NAME
 
 class CandidateJobEvaluator:
+    """
+        Handles evaluation and processing of candidate resumes and job descriptions.
+        Provides functionality for resume parsing, job description formatting,
+        and similarity scoring between resumes and job descriptions.
+    """
     def __init__(self):
         self.blob_service_client = BlobServiceClient(account_url=account_url, credential=account_key)
         self.formatted_resume = None
-        # Add default JD data as class attribute
-        self.jd_data = {
-            "required_experience": {
-                "yearsRequired": "3+ years",
-                "description": "Experience in software development"
-            },
-            "required_skills": [
-                "Python",
-                "JavaScript",
-                "React",
-                "Django"
-            ],
-            "roles_responsibilities": [
-                "Design, develop, test, and deploy high-quality software applications",
-                "Collaborate with product management, design, and other teams to understand requirements and deliver solutions",
-                "Perform code reviews and provide constructive feedback"
-            ],
-            "required_qualifications": [
-                {
-                    "degree": "Bachelor's degree",
-                    "field": "Computer Science, Software Engineering, or related field"
-                }
-            ],
-            "required_certifications": [
-                {
-                    "certificationName": "AWS Certified Solutions Architect - Associate",
-                    "issuingOrganization": "Amazon Web Services (AWS)"
-                }
-            ]
-        }
         logger.info(f"BlobServiceClient initialized for account: {account_name}")
 
     def generate_sas_token(self, container_name: str, blob_name: str) -> str:
@@ -129,10 +111,10 @@ class CandidateJobEvaluator:
             # Extract text from each page
             for page in pdf_reader.pages:
                 text += page.extract_text() + "\n"
-            # print(text)
-
+            logger.info(f"Data extracted successfully from pdf")
 
         except Exception as e:
+            logger.info(f"Error extracting text from PDF")
             raise Exception(f"Error extracting text from PDF: {str(e)}")
 
         return text
@@ -430,12 +412,7 @@ class CandidateJobEvaluator:
                         "error": "Could not retrieve company information"
                     }
 
-            # Save to JSON file
-            output_filename = 'company_info_llm.json'
-            with open(output_filename, 'w', encoding='utf-8') as output_file:
-                json.dump(company_info, output_file, ensure_ascii=False, indent=4)
-
-            logger.info(f"Company information saved to {output_filename}")
+            logger.info(f"Company information successfully extracted")
             return company_info
 
         except Exception as e:
@@ -572,35 +549,3 @@ class CandidateJobEvaluator:
                 "error_message": str(e),
                 "uploaded_file": pdf_filename
             }
-
-# Testing functions for local development
-# def test_resume_processing():
-#     """
-#     Test function for local development and testing resume processing.
-#     """
-#     try:
-#         processor = CandidateJobEvaluator()
-#
-#         # Test cases
-#         pdf_filename = 'AkshayRodi.pdf'
-#         result = processor.process_resume(pdf_filename)
-#
-#         if result["status"] == "success":
-#             print("\nFormatted Resume (JSON):")
-#             print("-" * 50)
-#             print(json.dumps(result['formatted_resume'], indent=2))
-#             print(f"\nBlob Storage Path: {result['blob_pdf_url']}")
-#             print("Processing completed successfully!")
-#         else:
-#             print("\nProcessing Failed:")
-#             print(f"Error: {result['error_message']}")
-#
-#         print("-" * 80)  # Separator between test cases
-#
-#     except Exception as e:
-#         logger.error(f"Test execution error: {str(e)}")
-#
-#
-# if __name__ == "__main__":
-#     # Run tests when file is executed directly
-#     test_resume_processing()

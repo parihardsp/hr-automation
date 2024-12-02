@@ -1,17 +1,35 @@
+"""
+Data Access Object (DAO) module for managing database interactions.
+
+This module provides a comprehensive set of methods for creating,
+retrieving, and managing database records across various entities
+in the HR automation system.
+"""
+# pylint: disable=C0301
+
 import json
-import logging
 from datetime import datetime
-from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional
+
+from sqlalchemy.orm import Session
+from app.core.logger_setup import setup_logger
+
 from .models import (
     Candidate, CandidateAttachment, Job, Application,
     JobContent, ProcessedJD, ProcessedResume, SimilarityScore
 )
 
-logger = logging.getLogger(__name__)
 
+
+logger = setup_logger(__name__)
 
 class DAO:
+    """
+       Data Access Object for managing database operations.
+
+       Provides methods to interact with various database entities,
+       including candidates, jobs, applications, and processed data.
+    """
     def __init__(self, db: Session):
         self.db = db
 

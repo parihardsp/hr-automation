@@ -10,37 +10,39 @@ from sqlalchemy.orm import Session
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 from app.database import get_db
-from app.greenhouse_applications.dao import DAO
+from app.gh_integration.dao import DAO
 from fastapi import Request
-from app.greenhouse_applications.greenhouse_api import GreenhouseService
-from app.greenhouse_applications.services import CandidateJobEvaluator
+from app.gh_integration.job_board_api import SimulateJobUrl
+from app.gh_integration.services import CandidateJobEvaluator
 
-from app.greenhouse_applications.models import (
+from app.gh_integration.models import (
     Job,
     Candidate,
     SimilarityScore,
     ProcessedResume
 )
-from app.greenhouse_applications.schema import (
+from app.gh_integration.schema import (
     ResumeResponse,
     SortCriteria
 )
 from sqlalchemy import desc
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
+from app.core.config import settings
 
 from app.core.logger_setup import setup_logger
 
 # Set up the logger
-logger = setup_logger()
+logger = setup_logger(__name__)
 
 # Set up router
 router = APIRouter()
 
+url_secret_key = settings.URL_SECRET_KEY
 
 @router.post("/simulate_webhook")
 async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
-    secret_key = "your_secret_key_here"
+    secret_key = url_secret_key
     signature = request.headers.get("Signature")
 
     if not signature or not verify_signature(secret_key, await request.body(), signature):
@@ -101,8 +103,8 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
 
         # 8. Process job content
         logger.info(f"Fetching job content for job_id: {job_id}")
-        greenhouse_service = GreenhouseService(board_token="your_board_token")
-        job_content_data = await greenhouse_service.fetch_job_content(job_id)
+        job_ulr_service = SimulateJobUrl(board_token="your_board_token")
+        job_content_data = await job_ulr_service.fetch_job_content(job_id)
 
         logger.info("Saving job content")
         job_content_record = dao.get_or_create_job_content(job_record.job_id, job_content_data)
