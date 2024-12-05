@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
+from enum import Enum
+
 
 class Candidate(BaseModel):
     id: Optional[int] = None
@@ -21,7 +23,7 @@ class Candidate(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class CandidateAttachment(BaseModel):
@@ -35,7 +37,7 @@ class CandidateAttachment(BaseModel):
     created_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Job(BaseModel):
@@ -49,7 +51,7 @@ class Job(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class JobContent(BaseModel):
@@ -66,7 +68,7 @@ class JobContent(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Application(BaseModel):
@@ -84,7 +86,7 @@ class Application(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ProcessedResume(BaseModel):
@@ -103,7 +105,7 @@ class ProcessedResume(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ProcessedJD(BaseModel):
@@ -120,7 +122,7 @@ class ProcessedJD(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class SimilarityScore(BaseModel):
@@ -136,4 +138,25 @@ class SimilarityScore(BaseModel):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+
+class SortCriteria(str, Enum):
+    overall_score = "overall_score"
+    skills_match = "skills_match"
+    experience_match = "experience_match"
+    education_match = "education_match"
+
+
+class ResumeResponse(BaseModel):
+    title: str
+    id: int
+    candidate_id: int
+    candidate_name: str
+    overall_score: float
+    match_details: List[Dict]  # Simplified from complex nested structure
+    company_bg_details: Optional[Dict] = None
+
+    class Config:
+        from_attributes = True
+        arbitrary_types_allowed = True  # Add this to allow arbitrary types

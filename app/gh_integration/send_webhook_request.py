@@ -3,12 +3,9 @@ import requests
 import os
 import hmac
 import hashlib
-import logging
+from app.core.logger_setup import setup_logger
 
-# Set up logging
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
+logger = setup_logger(__name__)
 
 def generate_signature(secret_key: str, message_body: bytes) -> str:
     return hmac.new(secret_key.encode(), message_body, hashlib.sha256).hexdigest()
@@ -20,8 +17,13 @@ def send_webhook_request():
     # Get the current directory of the script
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
+<<<<<<< HEAD:app/greenhouse_applications/send_webhook_request.py
     # Build the path to the 'dummy_data_2.json' inside 'Dummy Data' folder
     dummy_data_path = os.path.join(current_dir, 'Dummy Data', 'dummy_data_2.json')
+=======
+    # Build the path to the 'gh_app_data_2.json' inside 'Dummy Data' folder
+    dummy_data_path = os.path.join(current_dir, 'Samples', 'gh_app_data.json')
+>>>>>>> 419e0c9ee2b9d157058b141adb33761e9163ff4a:app/gh_integration/send_webhook_request.py
 
     try:
         with open(dummy_data_path, 'r') as f:
