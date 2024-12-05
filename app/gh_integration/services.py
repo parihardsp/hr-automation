@@ -68,7 +68,7 @@ class CandidateJobEvaluator:
         Upload a PDF file to Azure Blob Storage.
         """
         try:
-            pdf_path = Path('./Resumes') / pdf_filename
+            pdf_path = settings.RESUMES_DIR / pdf_filename
             logger.info(f"Looking for file at path: {pdf_path}")
 
             if not os.path.exists(pdf_path):

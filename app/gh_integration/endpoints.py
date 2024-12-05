@@ -149,8 +149,9 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
         if resume_attachment:
             try:
                 logger.info(f"Processing resume for candidate ID: {candidate_record.id}")
-                pdf_filename = 'AkshayRodi.pdf'  # Your test file
-                pdf_path = Path('./Resumes') / pdf_filename
+
+                pdf_filename = 'AkshayRodi.pdf'
+                pdf_path = settings.RESUMES_DIR / pdf_filename
 
                 if not os.path.exists(pdf_path):
                     logger.error(f"File not found: {pdf_path}")
