@@ -41,8 +41,9 @@
 #         raise
 #     finally:
 #         db.close()
+import urllib
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from urllib.parse import quote_plus
@@ -108,17 +109,22 @@ class DatabaseConfig:
             #     )
 
             # SQL Server Connection
-            elif self.settings.DATABASE_TYPE == DatabaseType.SQLSERVER.value:
-                return (
-                    f"mssql+pyodbc://{self.settings.MSSQL_USER}:"
-                    f"{quote_plus(self.settings.MSSQL_PASSWORD)}@"
-                    f"{self.settings.MSSQL_HOST}:{self.settings.MSSQL_PORT}/"
-                    f"{self.settings.MSSQL_DB}?driver=ODBC+Driver+17"
+            if self.settings.DATABASE_TYPE == DatabaseType.SQLSERVER.value:
+                params = urllib.parse.quote_plus(
+                    f'DRIVER={{ODBC Driver 18 for SQL Server}};'
+                    f'SERVER={self.settings.MSSQL_HOST};'
+                    f'DATABASE={self.settings.MSSQL_DB};'
+                    f'UID={self.settings.MSSQL_USER};'
+                    f'PWD={self.settings.MSSQL_PASSWORD};'
+                    f'TrustServerCertificate=yes;'
                 )
+
+                connection_string = f"mssql+pyodbc:///?odbc_connect={params}"
+                logger.debug(f"Connection string (sanitized): {connection_string.replace(self.settings.MSSQL_PASSWORD, '****')}")
+                return connection_string
 
             else:
                 raise ValueError(f"Unsupported database type: {self.settings.DATABASE_TYPE}")
-
         except Exception as e:
             logger.error(f"Error building connection string: {str(e)}")
             raise
@@ -138,6 +144,12 @@ class DatabaseConfig:
     def init_db(self, Base):
         """Initialize database by creating tables"""
         try:
+            # Create schema if it doesn't exist
+            with self.engine.connect() as connection:
+                connection.execute(text("IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'dbo') EXEC('CREATE SCHEMA dbo')"))
+                connection.commit()
+
+            # Create all tables
             Base.metadata.create_all(bind=self.engine)
             logger.info("Database tables created successfully")
         except Exception as e:

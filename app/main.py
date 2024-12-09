@@ -49,6 +49,29 @@ async def health_check():
         "database": settings.DATABASE_TYPE
     }
 
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.database import get_db
+
+@app.get("/similarity-scores", tags=["SimilarityScore"])
+async def get_similarity_scores(db: Session = Depends(get_db)):
+    """
+    Endpoint to fetch all data from the SimilarityScore table.
+    """
+    try:
+        # Fetch all similarity scores from the database
+        similarity_scores = db.query(SimilarityScore).all()
+
+        if not similarity_scores:
+            raise HTTPException(status_code=404, detail="No similarity scores found.")
+
+        # Return the list of similarity scores as JSON
+        return similarity_scores
+    except Exception as e:
+        logger.error(f"Error fetching similarity scores: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",

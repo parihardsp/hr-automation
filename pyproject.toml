@@ -30,6 +30,8 @@ pypdf2 = "^3.0.1"
 azure-core = "^1.32.0"
 azure-storage-blob = "^12.24.0"
 pyodbc = "^5.2.0"
+docx = "^0.2.4"
+python-docx = "^1.1.2"
 
 
 [tool.poetry.group.dev.dependencies]

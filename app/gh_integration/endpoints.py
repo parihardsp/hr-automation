@@ -3,6 +3,7 @@ import hmac
 import json
 import os
 import sys
+import traceback
 from pathlib import Path
 
 from fastapi.responses import JSONResponse
@@ -25,7 +26,7 @@ from app.gh_integration.schema import (
     ResumeResponse,
     SortCriteria
 )
-from sqlalchemy import desc
+from sqlalchemy import desc, exists
 from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import List
 from app.core.config import settings
@@ -266,6 +267,103 @@ def verify_signature(secret_key: str, message_body: bytes, signature: str) -> bo
     return hmac.compare_digest(hash, signature)
 
 
+# @router.get("/jobs/{job_id}/resumes")
+# async def get_resumes_by_job(
+#         job_id: int,
+#         sort_by: SortCriteria = Query(SortCriteria.overall_score, description="Sort criteria"),
+#         limit: int = Query(10, ge=1, le=50, description="Number of results to return"),
+#         db: Session = Depends(get_db)
+# ):
+#     try:
+#         query = (
+#             db.query(
+#                 Job.title.label('job_title'),
+#                 Candidate.id.label('id'),
+#                 Candidate.candidate_id.label('candidate_id'),
+#                 Candidate.first_name,
+#                 Candidate.last_name,
+#                 SimilarityScore.overall_score,
+#                 SimilarityScore.match_details,
+#                 ProcessedResume.company_bg_details
+#             )
+#             .join(SimilarityScore, Job.job_id == SimilarityScore.job_id)
+#             .join(Candidate, SimilarityScore.candidate_id == Candidate.id)
+#             .join(ProcessedResume, Candidate.id == ProcessedResume.candidate_id)
+#             .filter(Job.job_id == job_id)
+#         )
+#
+#         # Only sort by overall_score in database query
+#         if sort_by == SortCriteria.overall_score:
+#             query = query.order_by(desc(SimilarityScore.overall_score))
+#
+#         results = query.all()  # Get all results first
+#
+#         if not results:
+#             raise HTTPException(
+#                 status_code=404,
+#                 detail=f"No resumes found for job ID {job_id}"
+#             )
+#
+#         formatted_results = []
+#         for result in results:
+#             try:
+#                 match_details = result.match_details
+#                 if isinstance(match_details, str):
+#                     match_details = json.loads(match_details)
+#
+#                 company_bg_details = result.company_bg_details
+#                 if isinstance(company_bg_details, str):
+#                     company_bg_details = json.loads(company_bg_details)
+#
+#                 # Find specific score based on sort criteria
+#                 specific_score = 0
+#                 if sort_by != SortCriteria.overall_score:
+#                     score_type_map = {
+#                         SortCriteria.skills_match: "Skills Match",
+#                         SortCriteria.experience_match: "Experience Match",
+#                         SortCriteria.education_match: "Education Match"
+#                     }
+#                     for detail in match_details:
+#                         if detail.get('name') == score_type_map[sort_by]:
+#                             specific_score = float(detail.get('score', 0))
+#                             break
+#
+#                 formatted_result = {
+#                     "title": result.job_title,
+#                     "id": result.id,
+#                     "candidate_id": result.candidate_id,
+#                     "candidate_name": f"{result.first_name} {result.last_name}".strip(),
+#                     "overall_score": float(result.overall_score),
+#                     "match_details": match_details,
+#                     "company_bg_details": company_bg_details,
+#                     "_sort_score": specific_score if sort_by != SortCriteria.overall_score else float(
+#                         result.overall_score)
+#                 }
+#                 formatted_results.append(formatted_result)
+#             except Exception as e:
+#                 logger.error(f"Error formatting result: {str(e)}")
+#                 continue
+#
+#         # Sort results based on criteria
+#         if sort_by != SortCriteria.overall_score:
+#             formatted_results.sort(key=lambda x: x['_sort_score'], reverse=True)
+#
+#         # Apply limit after sorting
+#         formatted_results = formatted_results[:limit]
+#
+#         # Remove temporary sort score
+#         for result in formatted_results:
+#             del result['_sort_score']
+#
+#         return formatted_results
+#
+#     except Exception as e:
+#         logger.error(f"Error fetching resumes for job {job_id}: {str(e)}")
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Error fetching resumes: {str(e)}"
+#         )
+
 @router.get("/jobs/{job_id}/resumes")
 async def get_resumes_by_job(
         job_id: int,
@@ -274,6 +372,22 @@ async def get_resumes_by_job(
         db: Session = Depends(get_db)
 ):
     try:
+        # Log initial input parameters
+        logger.info(f"Received request for job_id: {job_id}, sort_by: {sort_by}, limit: {limit}")
+
+        # Log database connection and query preparation
+        logger.debug("Preparing database query...")
+
+        # Modified job existence check for SQL Server
+        job_exists = db.query(Job).filter(Job.job_id == job_id).first() is not None
+        if not job_exists:
+            logger.warning(f"No job found with ID {job_id}")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Job with ID {job_id} does not exist"
+            )
+
+        # Rest of your existing code remains the same
         query = (
             db.query(
                 Job.title.label('job_title'),
@@ -291,28 +405,47 @@ async def get_resumes_by_job(
             .filter(Job.job_id == job_id)
         )
 
+        # Log the raw SQL query for debugging
+        logger.debug(f"Raw SQL Query: {query.statement}")
+
         # Only sort by overall_score in database query
         if sort_by == SortCriteria.overall_score:
             query = query.order_by(desc(SimilarityScore.overall_score))
 
+        # Log number of total results before pagination
+        total_results_count = query.count()
+        logger.info(f"Total results found: {total_results_count}")
+
         results = query.all()  # Get all results first
 
         if not results:
+            logger.warning(f"No resumes found for job ID {job_id}")
             raise HTTPException(
                 status_code=404,
                 detail=f"No resumes found for job ID {job_id}"
             )
 
         formatted_results = []
-        for result in results:
+        for idx, result in enumerate(results):
             try:
+                # Log each result for detailed inspection
+                logger.debug(f"Processing result {idx}: {result}")
+
                 match_details = result.match_details
                 if isinstance(match_details, str):
-                    match_details = json.loads(match_details)
+                    try:
+                        match_details = json.loads(match_details)
+                    except json.JSONDecodeError as json_err:
+                        logger.error(f"JSON decode error for match_details: {json_err}")
+                        match_details = []
 
                 company_bg_details = result.company_bg_details
                 if isinstance(company_bg_details, str):
-                    company_bg_details = json.loads(company_bg_details)
+                    try:
+                        company_bg_details = json.loads(company_bg_details)
+                    except json.JSONDecodeError as json_err:
+                        logger.error(f"JSON decode error for company_bg_details: {json_err}")
+                        company_bg_details = {}
 
                 # Find specific score based on sort criteria
                 specific_score = 0
@@ -340,8 +473,13 @@ async def get_resumes_by_job(
                 }
                 formatted_results.append(formatted_result)
             except Exception as e:
-                logger.error(f"Error formatting result: {str(e)}")
+                logger.error(f"Error formatting result {idx}: {str(e)}")
+                # Log the full traceback for more details
+                logger.error(traceback.format_exc())
                 continue
+
+        # Log number of formatted results
+        logger.info(f"Number of formatted results: {len(formatted_results)}")
 
         # Sort results based on criteria
         if sort_by != SortCriteria.overall_score:
@@ -354,15 +492,20 @@ async def get_resumes_by_job(
         for result in formatted_results:
             del result['_sort_score']
 
+        logger.info(f"Returning {len(formatted_results)} results")
         return formatted_results
 
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
-        logger.error(f"Error fetching resumes for job {job_id}: {str(e)}")
+        logger.error(f"Unexpected error fetching resumes for job {job_id}: {str(e)}")
+        # Log the full traceback for unexpected errors
+        logger.error(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Error fetching resumes: {str(e)}"
         )
-
 
 @router.post("/jobs/{job_id}/query", response_model=List[ResumeResponse])
 async def query_resumes(

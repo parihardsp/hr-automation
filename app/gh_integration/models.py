@@ -3,7 +3,9 @@ from sqlalchemy import Column, Integer, String, Float, JSON, Text, DateTime, For
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+from app.database import Base
+
+#Base = declarative_base()
 
 class Candidate(Base):
     __tablename__ = 'candidates'

@@ -2,12 +2,13 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, JSON, Text, DateTime, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from app.database import Base
 
-Base = declarative_base()
+#Base = declarative_base()
 
 class GeneratedJD(Base):
     __tablename__ = 'generated_jds'
-    __table_args__ = {'schema': 'public'}  # Add schema specification
+    __table_args__ = {'schema': 'dbo'}  # Add schema specification
 
     id = Column(Integer, primary_key=True)
     content = Column(Text, nullable=False)
