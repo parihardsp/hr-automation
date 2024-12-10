@@ -185,6 +185,7 @@ class SimilarityScore(Base):
     processed_jd_id = Column(Integer, ForeignKey('processed_jd.id'), nullable=False)
     overall_score = Column(Float, nullable=False)
     match_details = Column(JSON)
+    potential_gaps = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

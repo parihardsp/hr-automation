@@ -238,69 +238,76 @@ class CandidateJobEvaluator:
         return analysis
 
     def format_resume_with_gpt(self, resume_text: str) -> Dict[str, Any]:
+        print("inside format_resume_with_gpt")
         """
-      Format resume text using GPT-4 into structured JSON
-      """
+        Format resume text using GPT-4 into structured JSON
+        """
         resume_text = resume_text.encode('utf-8', errors='ignore').decode('utf-8')
-
+        
+        # Remove the code block syntax and make it more direct
         system_message = """You are an AI that reformats resumes into structured JSON. 
-      Extract all relevant information and return ONLY valid JSON without any additional text or explanation.
-      Ensure the response can be parsed by json.loads(). Include all available skills, work experience, and education details."""
+        You must:
+        1. Extract all relevant information
+        2. Return ONLY valid JSON that can be parsed by json.loads()
+        3. Do not include any markdown, code blocks, or additional text
+        4. Ensure all text fields are properly escaped and on a single line
+        5. Include all available skills, work experience, and education details"""
 
-        prompt = f"""Please format the following resume into valid JSON using this exact structure:
-      ```json
-      {{
-          "personalInfo": {{
-              "name": "",
-              "location": "",
-              "email": "",
-              "phone": "",
-              "linkedIn": ""
-          }},
-          "education": [
-              {{
-                  "degree": "",
-                  "field": "",
-                  "institution": "",
-                  "graduationYear": "",
-                  "gpa": ""
-              }}
-          ],
-          "workExperience": [
-              {{
-                  "companyName": "",
-                  "position": "",
-                  "duration": "",
-                  "responsibilities": [""],
-                  "achievements": [""]
-              }}
-          ],
-          "skills": {{
-              "technical": [""],
-              "soft": [""],
-              "languages": [""]
-          }},
-          "certifications": [
-              {{
-                  "name": "",
-                  "issuingOrganization": "",
-                  "issueDate": "",
-                  "expiryDate": ""
-              }}
-          ],
-          "projects": [
-              {{
-                  "name": "",
-                  "description": "",
-                  "technologies": [""],
-                  "link": ""
-              }}
-          ]
-      }}
-      ```
-      Resume text:
-      {resume_text}
-      """
+        prompt = f"""Format the following resume into valid JSON using this structure:
+        {{
+            "personalInfo": {{
+                "name": "",
+                "location": "",
+                "email": "",
+                "phone": "",
+                "linkedIn": ""
+            }},
+            "education": [
+                {{
+                    "degree": "",
+                    "field": "",
+                    "institution": "",
+                    "graduationYear": "",
+                    "gpa": ""
+                }}
+            ],
+            "workExperience": [
+                {{
+                    "companyName": "",
+                    "position": "",
+                    "duration": "",
+                    "responsibilities": [""],
+                    "achievements": [""]
+                }}
+            ],
+            "skills": {{
+                "technical": [""],
+                "soft": [""],
+                "languages": [""]
+            }},
+            "certifications": [
+                {{
+                    "name": "",
+                    "issuingOrganization": "",
+                    "issueDate": "",
+                    "expiryDate": ""
+                }}
+            ],
+            "projects": [
+                {{
+                    "name": "",
+                    "description": "",
+                    "technologies": [""],
+                    "link": ""
+                }}
+            ]
+        }}
+
+        Resume text to format:
+        {resume_text}
+
+        IMPORTANT: Return only the JSON object itself, with no markdown formatting or code blocks."""
+
         try:
             response = openai.ChatCompletion.create(
                 engine=deployment_name,
@@ -313,13 +320,18 @@ class CandidateJobEvaluator:
             )
 
             response_text = response.choices[0].message.content.strip()
+            
+            # Clean up any potential markdown formatting
+            if response_text.startswith('```'):
+                response_text = response_text.split('```')[1]
+                if response_text.startswith('json'):
+                    response_text = response_text[4:]
+            response_text = response_text.strip()
+
             try:
                 parsed_json = json.loads(response_text)
-                #   parsed_json["processing_status"] = "COMPLETED"
-                #   self.formatted_resume = parsed_json
                 return parsed_json
             except json.JSONDecodeError as e:
-
                 logger.error(f"Error parsing GPT response as JSON: {e}")
                 logger.error(f"Raw response: {response_text}")
                 return None
@@ -328,81 +340,81 @@ class CandidateJobEvaluator:
             logger.error(f"Error in GPT API call: {e}")
             return None
 
-    def get_company_info_with_llm(self, company_name: str) -> Dict[str, Any]:
-        """
-        Use GPT to identify and provide information about a company.
+    # def get_company_info_with_llm(self, company_name: str) -> Dict[str, Any]:
+    #     """
+    #     Use GPT to identify and provide information about a company.
         
-        Args:
-            company_name (str): Name of the company to search for
+    #     Args:
+    #         company_name (str): Name of the company to search for
             
-        Returns:
-            Dict[str, Any]: Company information and possible LinkedIn URL
-        """
-        try:
-            system_message = """You are a knowledgeable assistant that helps identify companies and provide accurate information about them.
-            For any company name provided:
-            1. Identify the most likely matching real company
-            2. Provide key information about the company
-            3. Consider searching for the company website and LinkedIn/Google presence
-            4. If multiple companies match, provide information about the most relevant one
-            5. If you're not confident about the company match, indicate that in your response
-            6. For Indian companies, specifically consider:
-            - Professional body registrations (ICAI, etc.)
-            - Local business directories
-            - Company websites (usually ending in .co.in or .com)
-            Return ONLY valid JSON without any additional text."""
+    #     Returns:
+    #         Dict[str, Any]: Company information and possible LinkedIn URL
+    #     """
+    #     try:
+    #         system_message = """You are a knowledgeable assistant that helps identify companies and provide accurate information about them.
+    #         For any company name provided:
+    #         1. Identify the most likely matching real company
+    #         2. Provide key information about the company
+    #         3. Consider searching for the company website and LinkedIn/Google presence
+    #         4. If multiple companies match, provide information about the most relevant one
+    #         5. If you're not confident about the company match, indicate that in your response
+    #         6. For Indian companies, specifically consider:
+    #         - Professional body registrations (ICAI, etc.)
+    #         - Local business directories
+    #         - Company websites (usually ending in .co.in or .com)
+    #         Return ONLY valid JSON without any additional text."""
 
-            prompt = f"""Please provide information about this company: {company_name}
+    #         prompt = f"""Please provide information about this company: {company_name}
             
-            Think about how you would search for this company online:
-            1. Common website patterns (company.com, company.co.in)
-            2. Professional directories and associations
-            3. Business registries
-            4. Location-specific listings
+    #         Think about how you would search for this company online:
+    #         1. Common website patterns (company.com, company.co.in)
+    #         2. Professional directories and associations
+    #         3. Business registries
+    #         4. Location-specific listings
             
-            Return the information in this exact JSON format:
-            {{
-                "company_info": {{
-                    "Website": "Company website URL if available, or most likely URL pattern",
-                    "description": "A brief description covering the key points about the company",
-                    "industry": "Main industry",
-                    "Company size": "Approximate number of employees",
-                    "Headquarters": "Main headquarters location",
-                    "type": "Type of company (e.g., Private, Public, etc.)",
-                    "key_products_services": ["List of main products/services"],
-                    "Founded": "Founding year if known, otherwise null",
-                    "Specialties": ["Any notable facts about the company"]
-                }}
-            }}"""
+    #         Return the information in this exact JSON format:
+    #         {{
+    #             "company_info": {{
+    #                 "Website": "Company website URL if available, or most likely URL pattern",
+    #                 "description": "A brief description covering the key points about the company",
+    #                 "industry": "Main industry",
+    #                 "Company size": "Approximate number of employees",
+    #                 "Headquarters": "Main headquarters location",
+    #                 "type": "Type of company (e.g., Private, Public, etc.)",
+    #                 "key_products_services": ["List of main products/services"],
+    #                 "Founded": "Founding year if known, otherwise null",
+    #                 "Specialties": ["Any notable facts about the company"]
+    #             }}
+    #         }}"""
 
-            try:
-                response = openai.ChatCompletion.create(
-                    engine=deployment_name,
-                    messages=[
-                        {"role": "system", "content": system_message},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=2000,
-                    temperature=0.7
-                )
+    #         try:
+    #             response = openai.ChatCompletion.create(
+    #                 engine=deployment_name,
+    #                 messages=[
+    #                     {"role": "system", "content": system_message},
+    #                     {"role": "user", "content": prompt}
+    #                 ],
+    #                 max_tokens=2000,
+    #                 temperature=0.7
+    #             )
 
-                response_text = response.choices[0].message.content.strip()
+    #             response_text = response.choices[0].message.content.strip()
 
-                try:
-                    parsed_json = json.loads(response_text)
-                    return parsed_json
-                except json.JSONDecodeError as e:
-                    logger.error(f"Error parsing GPT response as JSON: {e}")
-                    logger.error(f"Raw response: {response_text}")
-                    return None
+    #             try:
+    #                 parsed_json = json.loads(response_text)
+    #                 return parsed_json
+    #             except json.JSONDecodeError as e:
+    #                 logger.error(f"Error parsing GPT response as JSON: {e}")
+    #                 logger.error(f"Raw response: {response_text}")
+    #                 return None
 
-            except Exception as e:
-                logger.error(f"Error in GPT API call: {e}")
-                return None
+    #         except Exception as e:
+    #             logger.error(f"Error in GPT API call: {e}")
+    #             return None
 
-        except Exception as e:
-            logger.error(f"Error getting company info with LLM: {str(e)}")
-            return None
+    #     except Exception as e:
+    #         logger.error(f"Error getting company info with LLM: {str(e)}")
+    #         return None
 
     def get_companies_info(self) -> Dict[str, Any]:
         """
@@ -466,72 +478,95 @@ class CandidateJobEvaluator:
             return {"error": str(e)}
 
     def generate_similarity_scores(
-            self,
-            resume_text: Dict[str, Any],
-            jd_data: Dict[str, Any],
-            application_id: int
-    ) -> Dict[str, Any]:
+        self,
+        resume_text: Dict[str, Any],
+        jd_data: Dict[str, Any],
+        application_id: int
+        ) -> Dict[str, Any]:
         """
         Generate similarity scores between processed resume and JD using GPT
-
+ 
         Args:
             resume_text: Dictionary containing resume fields (experience, skills, etc.)
             jd_data: Dictionary containing JD fields (required experience, skills, etc.)
             application_id: ID of the application for logging purposes
-
+ 
         Returns:
             Dict containing scores and detailed analysis
         """
         try:
             logger.info(f"Generating similarity scores for application ID: {application_id}")
-            logger.info(f"Resume data: {jd_data}")
-            logger.info(f"jd data: {resume_text}")
-
+ 
             prompt_template = """
-            You are a helpful assistant that scores resumes based on the provided job description (JD).
-            Evaluate the resume based on the following criteria:
-            1. Overall Relevance Score (0-100 points): Overall score based on entire evaluation done
-            2. Skills Match (0-30 points): How well do the skills listed in the resume match the skills required in the JD?
-            3. Experience Match (0-30 points): How well does the candidate's experience match the job requirements?
-            4. Education Match (0-20 points): How well does the candidate's education align with the job requirements?
-            5. Overall Relevance (0-20 points): Overall relevance of the candidate's profile to the job.
-
+            You are an AI assistant that calculates match percentages between resumes and job descriptions based on their JSON formats.
+            Analyze the following JSONs and provide match percentages along with the relevant reasoning:
+            # 1. Overall Relevance Score (0-100 points): Overall score based on entire evaluation done
+            # 2. Skills Match (0-30 points): How well do the skills listed in the resume match the skills required in the JD?
+            # 3. Experience Match (0-30 points): How well does the candidate's experience match the job requirements?
+            # 4. Education Match (0-20 points): How well does the candidate's education align with the job requirements?
+            # 5. Overall Relevance (0-20 points): Overall relevance of the candidate's profile to the job.
+ 
             Job Description: {processed_jd}
             Resume: {processed_resume}
-
+            
+            
+            Calculate and provide these match percentages and give reasons for the match and not how the percentage is calculated:
+ 
+            Skills Match: [Percentage]%
+            (Calculate based on matching skills in resume["skills"] and resume["projects"]["technologiesUsed"] against jd["requiredSkills"])
+ 
+            Experience Match: [Percentage]%
+            (Calculate based on resume["workExperience"] match with jd["requiredWorkExperience"] considering years and responsibilities)
+ 
+            Education Match: [Percentage]%
+            (Calculate based on resume["qualifications"] and resume["certifications"] match with jd["requiredQualifications"] and jd["requiredCertifications"])
+            
+            Overall Match: [Average of all four percentages]%
+            
+            Overall Assessment:
+             - Provide a brief evaluation of whether the candidate's experience aligns well with the role's requirements
+            
+            Potential Gaps:
+            - List any critical responsibilities from the JD where the candidate's experience may be limited or lacking
+ 
             Please provide the output in the following format:
-
+ 
             {{
-            "matching_score": 0,
+            "matching_score": Overall Match Percentage,
             "sections": [
                 {{
                 "name": "Skills Match",
-                "score": 0,
-                "max_score": 30,
+                "score": Skills Match Percentage,
+                "max_score": 100,
                 "overview": ""
                 }},
                 {{
                 "name": "Experience Match",
-                "score": 0,
-                "max_score": 30,
+                "score": Experience Match Percentage,
+                "max_score": 100,
                 "overview": ""
                 }},
                 {{
                 "name": "Education Match",
-                "score": 0,
-                "max_score": 20,
+                "score": Education Match Percentage,
+                "max_score": 100,
                 "overview": ""
                 }},
                 {{
                 "name": "Overall Relevance",
-                "score": 0,
-                "max_score": 20,
-                "overview": ""
+                "score": Overall Match Percentage,
+                "max_score": 100,
+                "overview": "Overall assessment"
+                }}
+            ],
+            "potential_gaps": [
+                {{
+                "description": "List of critical responsibilities from the JD that the candidate's experience may be limited or lacking"
                 }}
             ]
             }}
             """
-
+ 
             # Make GPT API call
             response = openai.ChatCompletion.create(
                 engine=deployment_name,
@@ -546,18 +581,23 @@ class CandidateJobEvaluator:
                 temperature=0.7
             )
 
+ 
             # Parse GPT response to extract scores and analysis
             analysis = response.choices[0].message.content
-
+            print("ANALYSIS", analysis)
             # Convert the analysis to a Python dictionary
             output = json.loads(analysis)
-
+            print("OUTPUT", output)
             # Calculate the overall matching score
-            overall_score = sum(section['score'] for section in output['sections'])
-            output['matching_score'] = overall_score
+            # overall_score = sum(section['score'] for section in output['sections'])
+            # output['matching_score'] = overall_score
 
+            print("##################")
+            print("Just before output")
+            print("##################")
+ 
             return output
-
+ 
         except Exception as e:
             logger.error(f"Error generating similarity scores: {str(e)}")
             raise

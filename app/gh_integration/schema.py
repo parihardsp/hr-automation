@@ -134,6 +134,7 @@ class SimilarityScore(BaseModel):
     processed_jd_id: int
     overall_score: float
     match_details: Dict[str, Any]
+    potential_gaps: Dict[str, Any]
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

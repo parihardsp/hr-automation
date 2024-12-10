@@ -370,7 +370,8 @@ class DAO:
                 processed_resume_id=processed_resume_id,
                 processed_jd_id=processed_jd_id,
                 overall_score=similarity_analysis['matching_score'],
-                match_details=similarity_analysis['sections']
+                match_details=similarity_analysis['sections'],
+                potential_gaps=similarity_analysis['potential_gaps']
             )
 
             self.db.add(new_score)
