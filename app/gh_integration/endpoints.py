@@ -113,7 +113,7 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
         # 9. Process and save JD
         logger.info(f"Processing job description for job ID: {job_record.job_id}")
 
-        job_content = """Job Title: Senior Software Engineer Department: Technology &amp; Development Location: Remote / Hybrid (Bangalore, India) Employment Type: Full-Time Job Summary: We are seeking a highly motivated and skilled Senior Software Engineer to join our dynamic development team. The successful candidate will be responsible for designing, developing, and implementing software solutions to address complex business challenges. This role involves working with cross-functional teams to define system requirements, troubleshoot issues, and deploy high-quality software. Key Responsibilities: &amp;lt;ul&amp;gt;&amp;lt;li&amp;gt;Design, develop, test, and deploy high-quality software applications&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Lead technical design discussions and architecture planning&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Collaborate with product management and design teams&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Mentor junior developers and perform code reviews&amp;lt;/li&amp;gt;&amp;lt;/ul&amp;gt; Required Skills &amp; Qualifications: &amp;lt;ul&amp;gt;&amp;lt;li&amp;gt;Bachelor's degree in Computer Science or related field&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;5+ years of experience in software development&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Strong proficiency in Python, JavaScript, React, Django&amp;lt;/li&amp;gt;&amp;lt;li&amp;gt;Experience with microservices and RESTful APIs&amp;lt;/li&amp;gt;&amp;lt;/ul&amp;gt; Benefits: Competitive salary (15-25 LPA), health insurance, flexible work hours. &amp;lt;p&amp;gt;Any HTML included through the hosted job application editor will be automatically converted into corresponding HTML entities.&amp;lt;/p&amp;gt;"""
+        job_content = """Title: Talent Executive Location: White City, London (4 days a week) Division: Talent Reports to: Talent Manager Are you ready to drive digital transformation and innovation within a dynamic organisation focused on delivering exceptional public services? Do you want to thrive in a fast-paced environment where you can identify, attract, and secure top talent? Do you want to have the opportunity to contribute directly to Agilisys' continued growth and success? If so, we would love to hear from you! ABOUT US Agilisys is at the forefront of digital transformation and innovation in the public services sector. With over two decades of experience, we have established ourselves as a trusted partner for governments, local authorities, and organizations nationwide. Our mission is to empower our clients to deliver exceptional public services by harnessing the full potential of technology and data. OUR VALUES Partnership:we become one team and family with organisations, helping them to navigate change and stay agile. Integrity: our people really care, going beyond the brief to make change happen for organisations and citizens. Innovation:we bring together the right technologies and services to design solutions that work. Passion: we are passionate about - and dedicated to - public services and improving people's lives. THE ROLE Key responsibilities The Talent Executive is a vital role within Agilisys and will be instrumental in leading the attraction, selection and placement process within the business and on a project basis. Specific duties Depending on the project, you will need to be comfortable doing the following: Support the talent function of Agilisys by managing the end-to-end recruitment processes. Facilitate administration for all stages of the recruitment process, including liaising with key stakeholders, and updating people systems. Demonstrate a growth mindset to continuously improve the processes and activities. Consistently build strong relationships with stakeholders internally and externally. ABOUT YOU The ideal candidate will have a track-record in delivering results while embracing change. Excellent stakeholder management experience is essential to being successful in this role. The Ideal Candidate An ambitious and driven individual with 2 + years' work experience in a recruitment role (in-house, agency, RPO or executive search). A bachelor's degree. Experience using recruitment systems such as LinkedIn Recruiter and Greenhouse (or equivalent) is preferred. A problem solver who takes ownership and won't settle until the problem is resolved. Resilient and loves to use any learnings to improve a process next time round. Thrives from working in a fast-paced environment and is comfortable with ambiguity. Collaborative by nature, looking to work with & elevate those around you. Experience setting up new processes and ways of working. Excellent stakeholder management. Passion for innovation. WHAT WE CAN OFFER YOU: This role will offer exposure to the right mix of challenges, within a culture that promotes continuous learning and development. Benefits include: Enhanced Pension Scheme Health Insurance Private Medical Insurance Life Assurance Access to exclusive discounts and offers through the company's "Perks at Work" scheme 25 days annual leave (with the option to buy more) PROCESS Simply submit your CV. By submitting your CV, you understand that we have a legitimate interest to use your personal data for the purposes of assessing your eligibility for this role. This means that we may use your personal data to contact you to discuss your CV or arrange an interview or transfer your CV to the hiring manager(s) of the role you have applied for. You can ask us at any time to remove your CV from our database by emailing talentacquisition@agilisys.co.uk – but please note that this means we will no longer consider you for the role you have applied for. We have a rigorous recruitment process, which we use for all our roles to ensure we attract the very best talent. Individuals seeking employment at Agilisys must note that we see diversity as something that creates a better workplace and delivers better outcomes. As such, we are keen to maximise the diversity of our workforce and actively encourage applications from all. We encourage diversity through perspective, background, identity, and thought whilst also fostering an environment where everyone can express themselves regardless of your race, religion, sex, gender, colour, national origin, disability, or any other applicable legally protected characteristic. We are committed to continuing to nurture an inclusive environment and building a diverse workforce.;"""
         try:
             if not job_content:
                 raise ValueError("Empty job content")
@@ -151,7 +151,7 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
             try:
                 logger.info(f"Processing resume for candidate ID: {candidate_record.id}")
 
-                pdf_filename = 'AkshayRodi.pdf'
+                pdf_filename = 'Tim Jones.docx'
                 pdf_path = settings.RESUMES_DIR / pdf_filename
 
                 if not os.path.exists(pdf_path):
@@ -213,6 +213,8 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
                     if isinstance(processed_resume_record.certifications, str)
                     else processed_resume_record.certifications
                 )
+
+                logger.info("Successfully created sections to fetch similarity_analysis function")
                 # ... Future [similar conversions for other sections]
 
                 similarity_analysis = processor.generate_similarity_scores(
@@ -441,11 +443,25 @@ async def get_resumes_by_job(
 
                 company_bg_details = result.company_bg_details
                 if isinstance(company_bg_details, str):
-                    try:
-                        company_bg_details = json.loads(company_bg_details)
-                    except json.JSONDecodeError as json_err:
-                        logger.error(f"JSON decode error for company_bg_details: {json_err}")
+                    if not company_bg_details:  # Handle None or empty string
                         company_bg_details = {}
+                    else:
+                        # Remove any extra quotes at the beginning and end if present
+                        company_bg_details = company_bg_details.strip('"')
+                        if company_bg_details:  # If there's still content after stripping quotes
+                            try:
+                                company_bg_details = json.loads(company_bg_details)
+                            except json.JSONDecodeError:
+                                # If it's just a plain string (not JSON), keep it as is
+                                logger.debug("company_bg_details is a plain string, keeping as is")
+                else:
+                    company_bg_details = {}
+                    # else:
+                    #     try:
+                    #         company_bg_details = json.loads(company_bg_details)
+                    #     except json.JSONDecodeError as json_err:
+                    #         logger.error(f"JSON decode error for company_bg_details: {json_err}")
+                    #         company_bg_details = {}
 
                 # Find specific score based on sort criteria
                 specific_score = 0

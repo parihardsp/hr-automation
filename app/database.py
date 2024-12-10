@@ -109,7 +109,7 @@ class DatabaseConfig:
             #     )
 
             # SQL Server Connection
-            if self.settings.DATABASE_TYPE == DatabaseType.SQLSERVER.value:
+            elif self.settings.DATABASE_TYPE == DatabaseType.SQLSERVER.value:
                 params = urllib.parse.quote_plus(
                     f'DRIVER={{ODBC Driver 18 for SQL Server}};'
                     f'SERVER={self.settings.MSSQL_HOST};'
@@ -144,10 +144,11 @@ class DatabaseConfig:
     def init_db(self, Base):
         """Initialize database by creating tables"""
         try:
-            # Create schema if it doesn't exist
-            with self.engine.connect() as connection:
-                connection.execute(text("IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'dbo') EXEC('CREATE SCHEMA dbo')"))
-                connection.commit()
+            # Create schema if it doesn't exist (PostgreSQL)
+            if self.settings.DATABASE_TYPE == DatabaseType.POSTGRES.value:
+                with self.engine.connect() as connection:
+                    connection.execute(text("CREATE SCHEMA IF NOT EXISTS dbo"))
+                    connection.commit()
 
             # Create all tables
             Base.metadata.create_all(bind=self.engine)
@@ -155,6 +156,7 @@ class DatabaseConfig:
         except Exception as e:
             logger.error(f"Error creating database tables: {str(e)}")
             raise
+
 
 
 # Initialize database configuration

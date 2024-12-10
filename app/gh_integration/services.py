@@ -9,6 +9,7 @@ import io
 import json
 import openai
 import PyPDF2
+from docx import Document
 import requests
 from pathlib import Path
 from typing import Dict, Any
@@ -98,28 +99,51 @@ class CandidateJobEvaluator:
             logger.error(f"Error uploading blob: {str(e)}")
             return False
 
-    def extract_text_from_pdf(self, pdf_content):
-        """Extract text from a PDF file content."""
-        print('inside extract_text_from_pdf')
+    def extract_text_from_pdf(self, file_content, filename):
+        file_extension = filename.split('.')[-1]
+        print('###########', file_extension)
+        """Extract text from either PDF or DOCX file content."""
+        print(f'Inside extract_text_from_document for {file_extension} file')
         text = ""
+        
         try:
-            # Create a PDF file object from bytes
-            pdf_file = io.BytesIO(pdf_content)
-            # Create PDF reader object
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-
-            # Extract text from each page
-            for page in pdf_reader.pages:
-                text += page.extract_text() + "\n"
-            logger.info(f"Data extracted successfully from pdf")
-
+            if file_extension.lower() == '.pdf':
+                # Create a PDF file object from bytes
+                pdf_file = io.BytesIO(file_content)
+                # Create PDF reader object
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                
+                # Extract text from each page
+                for page in pdf_reader.pages:
+                    text += page.extract_text() + "\n"
+                    
+            elif file_extension.lower() in ['docx', 'doc']:
+                # Create a document object from bytes
+                doc_file = io.BytesIO(file_content)
+                doc = Document(doc_file)
+                
+                # Extract text from paragraphs
+                for paragraph in doc.paragraphs:
+                    text += paragraph.text + "\n"
+                    
+                # Extract text from tables
+                for table in doc.tables:
+                    for row in table.rows:
+                        for cell in row.cells:
+                            text += cell.text + "\n"
+                        text += "\n"  # Add extra newline between table rows
+                    
+            else:
+                raise Exception(f"Unsupported file format: {file_extension}")
+            
+            return text.strip()
+                
         except Exception as e:
-            logger.info(f"Error extracting text from PDF")
-            raise Exception(f"Error extracting text from PDF: {str(e)}")
-
+            raise Exception(f"Error extracting text from {file_extension} file: {str(e)}")
+        
         return text
 
-    def get_latest_blob_with_sas(self) -> tuple[str, str, str]:
+    def get_latest_blob_with_sas(self, filename) -> tuple[str, str, str]:
         """
         Get the latest blob from the container with its SAS token.
         """
@@ -141,10 +165,10 @@ class CandidateJobEvaluator:
 
             response = requests.get(blob_url)
             if response.status_code != 200:
-                raise Exception(f"Failed to download blob: {response.status_code}")
+                raise Exception(f"Failed to download blob: {response.status_code, filename}")
 
             # Extract text from PDF
-            extracted_text = self.extract_text_from_pdf(response.content)
+            extracted_text = self.extract_text_from_pdf(response.content, filename)
             # print(f'get_latest_blob_with_sas:{extracted_text}')
 
             return latest_blob_name, blob_url, extracted_text
@@ -382,38 +406,60 @@ class CandidateJobEvaluator:
 
     def get_companies_info(self) -> Dict[str, Any]:
         """
-        Get information about the two most recent companies using LLM.
+        Get company background information matching the employment info format.
         """
         try:
             if not self.formatted_resume:
                 raise ValueError("No formatted resume data available. Please process the resume first.")
-
+                
             work_experience = self.formatted_resume.get("workExperience", [])
             if not work_experience:
                 raise ValueError("No work experience found in the formatted resume")
 
-            companies = work_experience[:2]  # Get two most recent companies
-            company_info = {}
+            # Format company data like in the second code
+            company_experience = []
+            for exp in work_experience[:2]:  # Get two most recent companies
+                exp_text = f"""
+                Company: {exp.get('companyName')}
+                Position: {exp.get('position')}
+                Responsibilities: {', '.join(exp.get('responsibilities', []))}
+                Achievements: {', '.join(exp.get('achievements', []))}
+                """
+                company_experience.append(exp_text)
 
-            for company in companies:
-                company_name = company.get("companyName")
-                if not company_name:
-                    continue
+            system_message = """You are a professional employment history summarizer. Create concise, 
+            informative summaries of candidates' previous employment, focusing on the companies they worked for, 
+            the companies' scope of business, and the candidate's role/function. Keep summaries to 2-3 sentences."""
 
-                # Get company information using LLM
-                llm_info = self.get_company_info_with_llm(company_name)
+            user_message = f"""
+            Create a previous employment summary based on this information:
 
-                if llm_info:
-                    company_info[company_name] = {
-                        "llm_matched_info": llm_info
-                    }
-                else:
-                    company_info[company_name] = {
-                        "error": "Could not retrieve company information"
-                    }
+            Experience Details:
+            {' '.join(company_experience)}
 
-            logger.info(f"Company information successfully extracted")
-            return company_info
+            Format the response like this example:
+            Has worked in [Company Names] in past. These companies are involved in [business description] and 
+            have [employee count] employees. This candidate worked in [specific part of the department] within 
+            the [function/division] of the company.
+
+            Important: Focus on factual information about previous employers and the candidate's roles."""
+
+            response = openai.ChatCompletion.create(
+                engine=deployment_name,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": user_message}
+                ],
+                max_tokens=200,
+                temperature=0.7
+            )
+
+            if response and response.choices:
+                company_summary = response.choices[0].message.content.strip()
+                return company_summary
+            else:
+                logger.error("No valid response from OpenAI API")
+                return None
 
         except Exception as e:
             logger.error(f"Error in getting companies info: {str(e)}")
@@ -438,6 +484,8 @@ class CandidateJobEvaluator:
         """
         try:
             logger.info(f"Generating similarity scores for application ID: {application_id}")
+            logger.info(f"Resume data: {jd_data}")
+            logger.info(f"jd data: {resume_text}")
 
             prompt_template = """
             You are a helpful assistant that scores resumes based on the provided job description (JD).
@@ -524,7 +572,7 @@ class CandidateJobEvaluator:
             if not upload_success:
                 raise Exception("Failed to upload PDF to blob storage")
 
-            latest_blob_name, blob_url, extracted_text = self.get_latest_blob_with_sas()
+            latest_blob_name, blob_url, extracted_text = self.get_latest_blob_with_sas(pdf_filename)
             formatted_resume = self.format_resume_with_gpt(extracted_text)
             if formatted_resume is None:
                 raise Exception("Failed to format resume with GPT")
