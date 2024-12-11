@@ -498,7 +498,24 @@ class CandidateJobEvaluator:
             Job Description: {processed_jd}
             Resume: {processed_resume}
 
-            Return ONLY the following JSON structure with no additional text or explanations:
+            Calculate and provide these match percentages and give reasons for the match and not how the percentage is calculated:
+ 
+            Skills Match: [Percentage]%
+            (Calculate based on matching skills in resume["skills"] and resume["projects"]["technologiesUsed"] against jd["requiredSkills"])
+ 
+            Experience Match: [Percentage]%
+            (Calculate based on resume["workExperience"] match with jd["requiredWorkExperience"] considering years and responsibilities)
+ 
+            Education Match: [Percentage]%
+            (Calculate based on resume["qualifications"] and resume["certifications"] match with jd["requiredQualifications"] and jd["requiredCertifications"])
+            
+            Overall Match: [Average of all four percentages]%
+            
+            Overall Assessment:
+             - Provide a brief evaluation of whether the candidate's experience aligns well with the role's requirements
+            
+            Potential Gaps:
+            - List any critical responsibilities from the JD where the candidate's experience may be limited or lacking
 
             {{
             "matching_score": Overall Match Percentage,
@@ -530,10 +547,11 @@ class CandidateJobEvaluator:
             ],
             "potential_gaps": [
                 {{
-                "description": "Gap description"
+                "description": "Potential Gaps"
                 }}
             ]
             }}"""
+            
 
             response = openai.ChatCompletion.create(
                 engine=deployment_name,
@@ -544,7 +562,7 @@ class CandidateJobEvaluator:
                         processed_resume=json.dumps(resume_text, indent=2)
                     )}
                 ],
-                max_tokens=1500,
+                max_tokens=3000,
                 temperature=0.7
             )
 
