@@ -1,0 +1,266 @@
+{
+  "action": "new_candidate_application",
+  "payload": {
+    "application": {
+      "id": 83647119,
+      "rejected_at": null,
+      "prospect": true,
+      "status": "active",
+      "applied_at": "2024-02-01T10:30:22Z",
+      "last_activity_at": "2024-02-15T09:23:18Z",
+      "url": "http://app.greenhouse.io/people/72156459?application_id=83647119",
+      "source": {
+        "id": 24,
+        "name": "Direct"
+      },
+      "credited_to": {
+        "id": 84356,
+        "email": "recruiter@example.com",
+        "name": "Michael Johnson",
+        "employee_id": "789XYZ"
+      },
+      "current_stage": {
+        "id": 3156789,
+        "name": "Initial Screen",
+        "interviews": [
+          {
+            "id": 5472983,
+            "name": "Initial Assessment",
+            "status": "scheduled",
+            "interview_kit": {
+              "url": "http://app.greenhouse.io/guides/5472983/people/72156459?application_id=83647119",
+              "content": "<p>Initial assessment guidelines for talent acquisition positions.</p>",
+              "questions": [
+                {
+                  "id": 4267891,
+                  "question": "Tell us about your experience in talent acquisition and strategic hiring."
+                },
+                {
+                  "id": 4267892,
+                  "question": "How do you approach diversity and inclusion in recruitment?"
+                }
+              ]
+            },
+            "interviewers": [
+              {
+                "id": 95731,
+                "email": "hiring.manager@example.com",
+                "name": "Sarah Chen"
+              }
+            ]
+          }
+        ]
+      },
+      "prospect_detail": {
+        "prospect_pool": "Talent Acquisition",
+        "prospect_stage": "Initial Contact",
+        "prospect_owner": "Michael Johnson"
+      },
+      "custom_fields": {
+        "application_custom_test": {
+          "name": "Application Custom Test",
+          "type": "single_select",
+          "value": "Option A"
+        },
+        "custom_boolean_test": {
+          "name": "Custom Boolean Test",
+          "type": "boolean",
+          "value": true
+        }
+      },
+      "candidate": {
+        "id": 72156459,
+        "first_name": "David",
+        "last_name": "Walker",
+        "title": "Talent Acquisition Specialist",
+        "company": "ALTEN UK",
+        "created_at": "2024-02-01T10:30:22Z",
+        "external_id": "DW797",
+        "url": "http://app.greenhouse.io/people/72156459",
+        "is_private": false,
+        "can_email": true,
+        "phone_numbers": [
+          {
+            "value": "+44 7700 900007",
+            "type": "mobile"
+          }
+        ],
+        "email_addresses": [
+          {
+            "value": "david.walker@alten.com",
+            "type": "work"
+          }
+        ],
+        "addresses": [
+          {
+            "value": "London, United Kingdom",
+            "type": "home"
+          }
+        ],
+        "educations": [
+          {
+            "school_name": "Cranfield University",
+            "degree": "MSc",
+            "discipline": "Management",
+            "start_date": "2021-09-01",
+            "end_date": "2022-05-01"
+          },
+          {
+            "school_name": "University of Delhi",
+            "degree": "BSc (Hons)",
+            "discipline": "Zoology (Life Sciences)",
+            "start_date": "2015-09-01",
+            "end_date": "2018-05-01"
+          }
+        ],
+        "employments": [
+          {
+            "company_name": "ALTEN UK",
+            "title": "Talent Acquisition Specialist",
+            "start_date": "2022-11-01",
+            "end_date": "2024-07-01"
+          },
+          {
+            "company_name": "EASTMAN KODAK COMPANY",
+            "title": "HR Operations Assistant",
+            "start_date": "2022-06-01",
+            "end_date": "2022-09-01"
+          },
+          {
+            "company_name": "OYSTER PRINTERS & PUBLISHERS LIMITED",
+            "title": "Business Development Manager",
+            "start_date": "2018-12-01",
+            "end_date": "2021-08-01"
+          }
+        ],
+        "recruiter": {
+          "id": 84356,
+          "email": "recruiter@example.com",
+          "name": "Michael Johnson",
+          "employee_id": "789XYZ"
+        },
+        "coordinator": {
+          "id": 84357,
+          "email": "coordinator@example.com",
+          "name": "Emily Rodriguez",
+          "employee_id": "790ABC"
+        },
+        "attachments": [
+          {
+            "filename": "David_Walker_Resume.pdf",
+            "url": "https://prod-heroku.s3.amazonaws.com/david-walker/resume",
+            "type": "resume"
+          }
+        ],
+        "tags": [
+          "Project Management",
+          "Leadership Hiring",
+          "Talent Acquisition",
+          "Stakeholder Management",
+          "Diversity Strategy",
+          "Employee Engagement",
+          "Cross-cultural Communication",
+          "Employer Branding",
+          "HR Operations",
+          "People Analytics",
+          "Executive Hiring",
+          "Strategic Sourcing",
+          "Database Management",
+          "Onboarding",
+          "DEI Strategy"
+        ],
+        "custom_fields": {
+          "certification": {
+            "name": "Professional Certification",
+            "type": "text",
+            "value": "CMI Level 7 in Management and Leadership, AIHR Certifications in Strategic Talent Acquisition, Talent Management & Succession Planning"
+          },
+          "education_level": {
+            "name": "Education Level",
+            "type": "single_select",
+            "value": "Master's Degree"
+          },
+          "achievements": {
+            "name": "Additional Achievements",
+            "type": "text",
+            "value": "Generated $4M+ in revenues, 80% acceptance rate, 85% new hire retention rate, Interview to Offer ratio of 3:1"
+          },
+          "languages": {
+            "name": "Languages",
+            "type": "text",
+            "value": "English"
+          }
+        }
+      },
+      "jobs": [
+        {
+          "id": 385962,
+          "name": "Talent Executive",
+          "requisition_id": "TE789",
+          "notes": "Strong experience in talent acquisition and DEI initiatives",
+          "confidential": false,
+          "job_post_id": 374682,
+          "status": "open",
+          "created_by_id": 384667,
+          "created_at": "2024-01-15T08:00:00Z",
+          "opened_at": "2024-01-20T09:00:00Z",
+          "closed_at": null,
+          "url": "http://app.greenhouse.io/sdash/385962",
+          "departments": [
+            {
+              "id": 9823,
+              "name": "Talent",
+              "external_id": "tal-dept-2"
+            }
+          ],
+          "offices": [
+            {
+              "id": 17589,
+              "name": "White City",
+              "location": "London, UK",
+              "external_id": "uk-office-1"
+            }
+          ],
+          "hiring_team": {
+            "hiring_managers": [
+              {
+                "user_id": 95731,
+                "employee_id": "TL456"
+              }
+            ],
+            "sourcers": [
+              {
+                "user_id": 84356,
+                "employee_id": "789XYZ"
+              }
+            ],
+            "recruiters": [
+              {
+                "user_id": 84356,
+                "employee_id": "789XYZ"
+              }
+            ],
+            "coordinators": [
+              {
+                "user_id": 84357,
+                "employee_id": "790ABC"
+              }
+            ]
+          },
+          "custom_fields": {
+            "employment_type": {
+              "name": "Employment",
+              "type": "single_select",
+              "value": "Full-time"
+            },
+            "replacement_role_": {
+              "name": "Replacement Role",
+              "type": "boolean",
+              "value": false
+            }
+          }
+        }
+      ]
+    }
+  }
+}
