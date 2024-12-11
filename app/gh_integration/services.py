@@ -483,20 +483,9 @@ class CandidateJobEvaluator:
         jd_data: Dict[str, Any],
         application_id: int
         ) -> Dict[str, Any]:
-        """
-        Generate similarity scores between processed resume and JD using GPT
- 
-        Args:
-            resume_text: Dictionary containing resume fields (experience, skills, etc.)
-            jd_data: Dictionary containing JD fields (required experience, skills, etc.)
-            application_id: ID of the application for logging purposes
- 
-        Returns:
-            Dict containing scores and detailed analysis
-        """
         try:
             logger.info(f"Generating similarity scores for application ID: {application_id}")
- 
+
             prompt_template = """
             You are an AI assistant that calculates match percentages between resumes and job descriptions based on their JSON formats.
             Analyze the following JSONs and provide match percentages along with the relevant reasoning:
@@ -505,32 +494,12 @@ class CandidateJobEvaluator:
             # 3. Experience Match (0-30 points): How well does the candidate's experience match the job requirements?
             # 4. Education Match (0-20 points): How well does the candidate's education align with the job requirements?
             # 5. Overall Relevance (0-20 points): Overall relevance of the candidate's profile to the job.
- 
+
             Job Description: {processed_jd}
             Resume: {processed_resume}
-            
-            
-            Calculate and provide these match percentages and give reasons for the match and not how the percentage is calculated:
- 
-            Skills Match: [Percentage]%
-            (Calculate based on matching skills in resume["skills"] and resume["projects"]["technologiesUsed"] against jd["requiredSkills"])
- 
-            Experience Match: [Percentage]%
-            (Calculate based on resume["workExperience"] match with jd["requiredWorkExperience"] considering years and responsibilities)
- 
-            Education Match: [Percentage]%
-            (Calculate based on resume["qualifications"] and resume["certifications"] match with jd["requiredQualifications"] and jd["requiredCertifications"])
-            
-            Overall Match: [Average of all four percentages]%
-            
-            Overall Assessment:
-             - Provide a brief evaluation of whether the candidate's experience aligns well with the role's requirements
-            
-            Potential Gaps:
-            - List any critical responsibilities from the JD where the candidate's experience may be limited or lacking
- 
-            Please provide the output in the following format:
- 
+
+            Return ONLY the following JSON structure with no additional text or explanations:
+
             {{
             "matching_score": Overall Match Percentage,
             "sections": [
@@ -538,19 +507,19 @@ class CandidateJobEvaluator:
                 "name": "Skills Match",
                 "score": Skills Match Percentage,
                 "max_score": 100,
-                "overview": ""
+                "overview": "Brief overview of skills match"
                 }},
                 {{
                 "name": "Experience Match",
                 "score": Experience Match Percentage,
                 "max_score": 100,
-                "overview": ""
+                "overview": "Brief overview of experience match"
                 }},
                 {{
                 "name": "Education Match",
                 "score": Education Match Percentage,
                 "max_score": 100,
-                "overview": ""
+                "overview": "Brief overview of education match"
                 }},
                 {{
                 "name": "Overall Relevance",
@@ -561,17 +530,15 @@ class CandidateJobEvaluator:
             ],
             "potential_gaps": [
                 {{
-                "description": "List of critical responsibilities from the JD that the candidate's experience may be limited or lacking"
+                "description": "Gap description"
                 }}
             ]
-            }}
-            """
- 
-            # Make GPT API call
+            }}"""
+
             response = openai.ChatCompletion.create(
                 engine=deployment_name,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "system", "content": "You are a helpful assistant. Return ONLY the JSON object with no additional text."},
                     {"role": "user", "content": prompt_template.format(
                         processed_jd=json.dumps(jd_data, indent=2),
                         processed_resume=json.dumps(resume_text, indent=2)
@@ -581,23 +548,30 @@ class CandidateJobEvaluator:
                 temperature=0.7
             )
 
- 
-            # Parse GPT response to extract scores and analysis
-            analysis = response.choices[0].message.content
-            print("ANALYSIS", analysis)
-            # Convert the analysis to a Python dictionary
-            output = json.loads(analysis)
-            print("OUTPUT", output)
-            # Calculate the overall matching score
-            # overall_score = sum(section['score'] for section in output['sections'])
-            # output['matching_score'] = overall_score
+            analysis = response.choices[0].message.content.strip()
+            
+            # Try to extract JSON from the response
+            try:
+                # First attempt: try to parse the entire response
+                output = json.loads(analysis)
+            except json.JSONDecodeError:
+                # Second attempt: try to find and extract just the JSON object
+                try:
+                    # Find the first { and last }
+                    start_idx = analysis.find('{')
+                    end_idx = analysis.rstrip().rfind('}') + 1
+                    if start_idx != -1 and end_idx != -1:
+                        json_str = analysis[start_idx:end_idx]
+                        output = json.loads(json_str)
+                    else:
+                        raise ValueError("Could not find valid JSON object in response")
+                except Exception as e:
+                    logger.error(f"Error extracting JSON from response: {str(e)}")
+                    logger.error(f"Raw response: {analysis}")
+                    raise
 
-            print("##################")
-            print("Just before output")
-            print("##################")
- 
             return output
- 
+
         except Exception as e:
             logger.error(f"Error generating similarity scores: {str(e)}")
             raise

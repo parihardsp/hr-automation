@@ -151,7 +151,7 @@ async def simulate_webhook(request: Request, db: Session = Depends(get_db)):
             try:
                 logger.info(f"Processing resume for candidate ID: {candidate_record.id}")
 
-                pdf_filename = 'Tim Jones.docx'
+                pdf_filename = 'David Walker.docx'
                 pdf_path = settings.RESUMES_DIR / pdf_filename
 
                 if not os.path.exists(pdf_path):

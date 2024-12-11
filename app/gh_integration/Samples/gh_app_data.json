@@ -2,13 +2,13 @@
   "action": "new_candidate_application",
   "payload": {
     "application": {
-      "id": 83647120,
+      "id": 83647119,
       "rejected_at": null,
       "prospect": true,
       "status": "active",
       "applied_at": "2024-02-01T10:30:22Z",
       "last_activity_at": "2024-02-15T09:23:18Z",
-      "url": "http://app.greenhouse.io/people/72156460?application_id=83647120",
+      "url": "http://app.greenhouse.io/people/72156459?application_id=83647119",
       "source": {
         "id": 24,
         "name": "Direct"
@@ -28,16 +28,16 @@
             "name": "Initial Assessment",
             "status": "scheduled",
             "interview_kit": {
-              "url": "http://app.greenhouse.io/guides/5472983/people/72156460?application_id=83647120",
+              "url": "http://app.greenhouse.io/guides/5472983/people/72156459?application_id=83647119",
               "content": "<p>Initial assessment guidelines for talent acquisition positions.</p>",
               "questions": [
                 {
                   "id": 4267891,
-                  "question": "Tell us about your experience in early careers recruitment and campus strategy."
+                  "question": "Tell us about your experience in talent acquisition and strategic hiring."
                 },
                 {
                   "id": 4267892,
-                  "question": "How do you approach managing international recruitment campaigns?"
+                  "question": "How do you approach diversity and inclusion in recruitment?"
                 }
               ]
             },
@@ -69,25 +69,25 @@
         }
       },
       "candidate": {
-        "id": 72156460,
-        "first_name": "Tim",
-        "last_name": "Jones",
-        "title": "Senior Associate",
-        "company": "The Early Careers Company",
+        "id": 72156459,
+        "first_name": "David",
+        "last_name": "Walker",
+        "title": "Talent Acquisition Specialist",
+        "company": "ALTEN UK",
         "created_at": "2024-02-01T10:30:22Z",
-        "external_id": "TJ798",
-        "url": "http://app.greenhouse.io/people/72156460",
+        "external_id": "DW797",
+        "url": "http://app.greenhouse.io/people/72156459",
         "is_private": false,
         "can_email": true,
         "phone_numbers": [
           {
-            "value": "+44 7700 900008",
+            "value": "+44 7700 900007",
             "type": "mobile"
           }
         ],
         "email_addresses": [
           {
-            "value": "tim.jones@earlycareersc.com",
+            "value": "david.walker@alten.com",
             "type": "work"
           }
         ],
@@ -99,38 +99,38 @@
         ],
         "educations": [
           {
-            "school_name": "University of Leeds",
-            "degree": "BSc",
-            "discipline": "Psychology",
-            "start_date": "2019-09-01",
-            "end_date": "2022-07-01"
+            "school_name": "Cranfield University",
+            "degree": "MSc",
+            "discipline": "Management",
+            "start_date": "2021-09-01",
+            "end_date": "2022-05-01"
           },
           {
-            "school_name": "Varndean College",
-            "degree": "International Baccalaureate",
-            "discipline": "Psychology, English Literature, Biology",
-            "start_date": "2017-09-01",
-            "end_date": "2019-06-01"
+            "school_name": "University of Delhi",
+            "degree": "BSc (Hons)",
+            "discipline": "Zoology (Life Sciences)",
+            "start_date": "2015-09-01",
+            "end_date": "2018-05-01"
           }
         ],
         "employments": [
           {
-            "company_name": "The Early Careers Company",
-            "title": "Senior Associate",
-            "start_date": "2023-03-01",
-            "end_date": "2024-02-15"
+            "company_name": "ALTEN UK",
+            "title": "Talent Acquisition Specialist",
+            "start_date": "2022-11-01",
+            "end_date": "2024-07-01"
           },
           {
-            "company_name": "The Early Careers Company",
-            "title": "Associate",
-            "start_date": "2022-07-01",
-            "end_date": "2023-03-01"
+            "company_name": "EASTMAN KODAK COMPANY",
+            "title": "HR Operations Assistant",
+            "start_date": "2022-06-01",
+            "end_date": "2022-09-01"
           },
           {
-            "company_name": "The Savoy",
-            "title": "Talent & Culture Intern",
-            "start_date": "2021-06-01",
-            "end_date": "2021-09-01"
+            "company_name": "OYSTER PRINTERS & PUBLISHERS LIMITED",
+            "title": "Business Development Manager",
+            "start_date": "2018-12-01",
+            "end_date": "2021-08-01"
           }
         ],
         "recruiter": {
@@ -147,48 +147,48 @@
         },
         "attachments": [
           {
-            "filename": "Tim_Jones_Resume.pdf",
-            "url": "https://prod-heroku.s3.amazonaws.com/tim-jones/resume",
+            "filename": "David_Walker_Resume.pdf",
+            "url": "https://prod-heroku.s3.amazonaws.com/david-walker/resume",
             "type": "resume"
           }
         ],
         "tags": [
-          "Early Careers Recruitment",
-          "Campus Strategy",
-          "International Recruitment",
-          "Assessment Centers",
-          "Team Management",
-          "ATS Systems",
-          "Stakeholder Management",
-          "Event Management",
-          "University Relations",
+          "Project Management",
+          "Leadership Hiring",
           "Talent Acquisition",
+          "Stakeholder Management",
+          "Diversity Strategy",
+          "Employee Engagement",
+          "Cross-cultural Communication",
+          "Employer Branding",
           "HR Operations",
-          "Candidate Management",
-          "DEI Reporting",
-          "Market Research",
-          "Client Relationship Management"
+          "People Analytics",
+          "Executive Hiring",
+          "Strategic Sourcing",
+          "Database Management",
+          "Onboarding",
+          "DEI Strategy"
         ],
         "custom_fields": {
           "certification": {
             "name": "Professional Certification",
             "type": "text",
-            "value": "Experienced with Recruit CRM, RecruiterFlow, and Greenhouse ATS"
+            "value": "CMI Level 7 in Management and Leadership, AIHR Certifications in Strategic Talent Acquisition, Talent Management & Succession Planning"
           },
           "education_level": {
             "name": "Education Level",
             "type": "single_select",
-            "value": "Bachelor's Degree"
+            "value": "Master's Degree"
           },
           "achievements": {
             "name": "Additional Achievements",
             "type": "text",
-            "value": "Hired 35+ international candidates, 40% increase in event engagement, Quarterly 'On It' Value Award Q2 2023"
+            "value": "Generated $4M+ in revenues, 80% acceptance rate, 85% new hire retention rate, Interview to Offer ratio of 3:1"
           },
           "languages": {
             "name": "Languages",
             "type": "text",
-            "value": "English (native), Indonesian (beginner)"
+            "value": "English"
           }
         }
       },
@@ -197,7 +197,7 @@
           "id": 385962,
           "name": "Talent Executive",
           "requisition_id": "TE789",
-          "notes": "Strong experience in early careers recruitment and international talent acquisition",
+          "notes": "Strong experience in talent acquisition and DEI initiatives",
           "confidential": false,
           "job_post_id": 374682,
           "status": "open",
